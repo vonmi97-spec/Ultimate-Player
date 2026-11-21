@@ -47,6 +47,16 @@
   .hist{font-size:13px;display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
   .hist:last-child{border:0}
   .small{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:6px 10px;font-size:12px}
+  .scanbtn{width:100%;background:#0f1219;border:1px dashed var(--acc);color:var(--acc);border-radius:12px;padding:13px;font-size:15px;font-weight:800;margin-bottom:14px}
+  #scan{display:none}
+  #scan video,#scan canvas{width:100%;border-radius:12px;background:#000;display:block;touch-action:none}
+  .btns{display:flex;gap:8px;margin-top:10px}.btns button{flex:1}
+  .b2{background:#0f1219;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px;font-size:14px;font-weight:700}
+  .b1{background:var(--acc);border:0;color:#111;border-radius:10px;padding:11px;font-size:14px;font-weight:800}
+  .step{font-size:15px;font-weight:800;margin:10px 0 4px}.step small{display:block;font-size:12px;color:var(--mut);font-weight:400;margin-top:2px}
+  select{width:100%;background:#0f1219;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:15px}
+  .warn{font-size:12px;color:var(--acc2);margin-top:8px;line-height:1.4}
+  .meas{font-size:14px;line-height:1.7;margin-top:8px}
 </style>
 </head>
 <body>
@@ -54,6 +64,46 @@
   <h1>Ultimate <span>Player</span></h1>
   <p>Découvre ton archétype de basketteur selon ta taille et ton poids</p>
 </header>
+
+<button class="scanbtn" id="openScan">📷 Scanner le joueur</button>
+
+<div class="card" id="scan">
+  <h3>Scan du joueur</h3>
+  <div id="sc1">
+    <label>Objet de référence visible sur la photo</label>
+    <select id="ref">
+      <option value="204|Porte standard (204 cm)|Haut de la porte|Bas de la porte">Porte standard — 204 cm</option>
+      <option value="305|Panier de basket (305 cm)|Cercle du panier|Sol sous le panier">Panier de basket — 305 cm</option>
+      <option value="29.7|Feuille A4 (29,7 cm)|Haut de la feuille|Bas de la feuille">Feuille A4 tenue verticalement — 29,7 cm</option>
+      <option value="24.3|Ballon taille 7 (24,3 cm)|Bord gauche du ballon|Bord droit du ballon">Ballon taille 7 — 24,3 cm</option>
+      <option value="custom">Autre objet (je saisis sa taille)</option>
+    </select>
+    <div id="customBox" style="display:none"><label>Taille de l'objet (cm)</label><input type="number" id="refCm" placeholder="ex. 100"></div>
+    <div class="warn">Conseils : joueur debout, de face, pieds visibles, bras écartés à l'horizontale si possible. L'objet de référence doit être <b>à la même distance</b> de l'appareil que le joueur. Téléphone à hauteur de taille, bien droit.</div>
+    <video id="vid" autoplay playsinline muted style="margin-top:12px;display:none"></video>
+    <div class="btns">
+      <button class="b1" id="camBtn">Ouvrir la caméra</button>
+      <button class="b2" id="galBtn">Choisir une photo</button>
+    </div>
+    <button class="b1" id="shotBtn" style="display:none;width:100%;margin-top:8px">📸 Prendre la photo</button>
+    <input type="file" id="file" accept="image/*" capture="environment" style="display:none">
+  </div>
+  <div id="sc2" style="display:none">
+    <div class="step" id="stepTxt"></div>
+    <canvas id="cv"></canvas>
+    <div class="btns">
+      <button class="b2" id="undo">↩ Annuler le point</button>
+      <button class="b2" id="skip" style="display:none">Passer</button>
+      <button class="b2" id="restart">Nouvelle photo</button>
+    </div>
+  </div>
+  <div id="sc3" style="display:none">
+    <div class="meas" id="meas"></div>
+    <div class="warn">Le poids est une <b>estimation</b> à partir de la carrure : corrige-le dans le formulaire si tu le connais.</div>
+    <div class="btns"><button class="b2" id="restart2">Refaire</button><button class="b1" id="useScan">Utiliser ces mesures</button></div>
+  </div>
+  <button class="b2" id="closeScan" style="width:100%;margin-top:10px">Fermer le scan</button>
+</div>
 
 <div class="card">
   <label>Sexe</label>
@@ -174,8 +224,23 @@ function calc(){
   $("chips").innerHTML=[`${h} cm`,`${w} kg`,`Envergure ${env} cm`,`IMC ${imc.toFixed(1)}`,`Ape index ${ape>=0?"+":""}${ape}`]
     .map(t=>`<span class="chip">${t}</span>`).join("");
   $("stats").innerHTML=Object.entries(s).map(([k,v])=>`<div class="stat"><b>${k}</b><div class="bar"><i style="width:${v}%"></i></div><span>${v}</span></div>`).join("");
-  $("forts").innerHTML=a.f.map(t=>`<li>${t}</li>`).join("");
-  $("faibles").innerHTML=a.w.map(t=>`<li>${t}</li>`).join("");
+  const F=[...a.f],W=[...a.w];
+  if(ape>=5)F.push("Grande envergure (+"+ape+" cm) : interceptions, contres et rebonds");
+  else if(ape<=-3)W.push("Envergure courte : travaille le placement et l'anticipation en défense");
+  if(scanData){
+    const sr=scanData.sh/scanData.h;
+    if(sr>=0.265)F.push("Carrure large : avantage dans les contacts et les écrans");
+    else if(sr<=0.235)W.push("Carrure fine : renforcement du haut du corps (gainage, pompes)");
+    if(scanData.hp&&scanData.sh/scanData.hp>=1.4)F.push("Haut du corps en V : bonne base pour la puissance");
+    if(scanData.hp&&scanData.sh/scanData.hp<1.2)W.push("Appuis à renforcer : squats, fentes, travail de pieds");
+  }
+  if(s["Vitesse"]<55)W.push("Vitesse : sprints courts, échelle de rythme, défense en glissés");
+  if(s["Tir"]<60)W.push("Tir : 100 tirs par séance, mécanique et lancers francs");
+  if(s["Dribble"]<55)W.push("Dribble : main faible, changements de main, dribble sous pression");
+  if(s["Force"]<50)W.push("Force : musculation au poids du corps, gainage");
+  if(s["Rebond"]<50)W.push("Rebond : box-out systématique et timing de saut");
+  $("forts").innerHTML=F.map(t=>`<li>${t}</li>`).join("");
+  $("faibles").innerHTML=W.map(t=>`<li>${t}</li>`).join("");
 
   // alternatives : poste voisin + autre gabarit
   const alts=[];
@@ -194,6 +259,86 @@ function showHist(){const l=load();$("histCard").style.display=l.length?"block":
 $("clear").onclick=()=>{try{localStorage.removeItem("up_hist")}catch(e){}showHist()};
 $("go").onclick=calc;
 showHist();
+
+// ===== SCAN =====
+let scanData=null,img=null,pts=[],steps=[],stream=null,refCm=0;
+const cv=$("cv"),ctx=cv.getContext("2d");
+$("ref").onchange=()=>$("customBox").style.display=$("ref").value==="custom"?"block":"none";
+$("openScan").onclick=()=>{$("scan").style.display="block";$("openScan").style.display="none";resetScan()};
+$("closeScan").onclick=()=>{stopCam();$("scan").style.display="none";$("openScan").style.display="block"};
+function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$("vid").style.display="none";$("shotBtn").style.display="none"}
+function resetScan(){stopCam();pts=[];img=null;$("sc1").style.display="block";$("sc2").style.display="none";$("sc3").style.display="none"}
+$("restart").onclick=resetScan;$("restart2").onclick=resetScan;
+$("camBtn").onclick=async()=>{
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}},audio:false});
+    $("vid").srcObject=stream;$("vid").style.display="block";$("shotBtn").style.display="block";
+  }catch(e){alert("Caméra indisponible ("+e.name+"). Autorise l'accès à l'appareil photo, ou utilise « Choisir une photo ».")}
+};
+$("shotBtn").onclick=()=>{
+  const v=$("vid"),c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;
+  c.getContext("2d").drawImage(v,0,0);const i=new Image();i.onload=()=>{stopCam();startTap(i)};i.src=c.toDataURL("image/jpeg",.9);
+};
+$("galBtn").onclick=()=>$("file").click();
+$("file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{const i=new Image();i.onload=()=>startTap(i);i.src=r.result};r.readAsDataURL(f);e.target.value=""};
+function startTap(i){
+  const v=$("ref").value;let r1,r2;
+  if(v==="custom"){refCm=+$("refCm").value;if(!(refCm>0)){alert("Indique la taille de l'objet de référence.");return}r1="Une extrémité de l'objet";r2="L'autre extrémité de l'objet"}
+  else{const p=v.split("|");refCm=+p[0];r1=p[2];r2=p[3]}
+  steps=[
+    {k:"r1",t:"Touche : "+r1,h:"Référence — point 1"},
+    {k:"r2",t:"Touche : "+r2,h:"Référence — point 2"},
+    {k:"head",t:"Touche le sommet de la tête",h:"Haut du crâne, sans les cheveux volumineux"},
+    {k:"feet",t:"Touche le sol sous les pieds",h:"Au niveau des talons"},
+    {k:"sl",t:"Touche l'épaule gauche (bord extérieur)",h:"Pour mesurer la carrure"},
+    {k:"sr",t:"Touche l'épaule droite (bord extérieur)",h:""},
+    {k:"hl",t:"Touche la hanche gauche",h:"Facultatif",o:1},
+    {k:"hr",t:"Touche la hanche droite",h:"Facultatif",o:1},
+    {k:"fl",t:"Bout des doigts — main gauche",h:"Facultatif : seulement si les bras sont écartés",o:1},
+    {k:"fr",t:"Bout des doigts — main droite",h:"Facultatif",o:1}];
+  img=i;pts=[];$("sc1").style.display="none";$("sc2").style.display="block";
+  cv.width=i.naturalWidth;cv.height=i.naturalHeight;draw();
+}
+function cur(){return steps[pts.length]}
+function draw(){
+  ctx.drawImage(img,0,0);const R=Math.max(6,cv.width/120);
+  ctx.lineWidth=R/2;
+  const P=k=>pts.find(p=>p.k===k);
+  [["r1","r2","#3ddc97"],["head","feet","#ff7a1a"],["sl","sr","#ffb347"],["hl","hr","#ffb347"],["fl","fr","#6ab0ff"]].forEach(([a,b,c])=>{
+    const A=P(a),B=P(b);if(A&&B&&A.x!=null&&B.x!=null){ctx.strokeStyle=c;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke()}});
+  pts.forEach(p=>{if(p.x==null)return;ctx.fillStyle="#ff7a1a";ctx.strokeStyle="#fff";ctx.beginPath();ctx.arc(p.x,p.y,R,0,7);ctx.fill();ctx.stroke()});
+  const c=cur();
+  if(c){$("stepTxt").innerHTML=`${pts.length+1}/${steps.length} · ${c.t}<small>${c.h}</small>`;$("skip").style.display=c.o?"block":"none"}
+  else finishScan();
+}
+cv.addEventListener("click",e=>{
+  if(!cur())return;const b=cv.getBoundingClientRect();
+  pts.push({k:cur().k,x:(e.clientX-b.left)*cv.width/b.width,y:(e.clientY-b.top)*cv.height/b.height});draw();
+});
+$("undo").onclick=()=>{pts.pop();draw()};
+$("skip").onclick=()=>{const c=cur();if(c&&c.o){pts.push({k:c.k,x:null});draw()}};
+function finishScan(){
+  const P=k=>{const p=pts.find(q=>q.k===k);return p&&p.x!=null?p:null};
+  const d=(a,b)=>a&&b?Math.hypot(a.x-b.x,a.y-b.y):0;
+  const sc=refCm/d(P("r1"),P("r2"));
+  const h=Math.round(d(P("head"),P("feet"))*sc), sh=d(P("sl"),P("sr"))*sc, hp=d(P("hl"),P("hr"))*sc, sp=Math.round(d(P("fl"),P("fr"))*sc);
+  if(!(h>=110&&h<=240)){alert("Taille mesurée incohérente ("+h+" cm). Vérifie que la référence est à la même distance que le joueur et recommence.");resetScan();return}
+  const sr=sh/h;
+  const bmi=Math.max(17.5,Math.min(32,22.8+(sr-0.25)*140));
+  const w=Math.round(bmi*(h/100)**2);
+  scanData={h,sh,hp,sp,w};
+  $("sc2").style.display="none";$("sc3").style.display="block";
+  $("meas").innerHTML=`📏 Taille : <b>${h} cm</b><br>💪 Carrure (épaules) : <b>${Math.round(sh)} cm</b>`+
+    (hp?`<br>🦵 Hanches : <b>${Math.round(hp)} cm</b>`:"")+(sp?`<br>✋ Envergure : <b>${sp} cm</b>`:"")+
+    `<br>⚖️ Poids estimé : <b>≈ ${w} kg</b>`;
+}
+$("useScan").onclick=()=>{
+  $("taille").value=scanData.h;$("poids").value=scanData.w;if(scanData.sp>=110)$("env").value=scanData.sp;
+  $("closeScan").click();calc();
+};
+// les saisies manuelles annulent le scan
+["taille","poids","env"].forEach(id=>$(id).addEventListener("input",()=>{if(scanData&&+$("taille").value!==scanData.h)scanData=null}));
 </script>
 </body>
 </html>
