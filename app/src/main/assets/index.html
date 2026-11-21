@@ -198,7 +198,7 @@ const KB={4:15.6,5:15.3,6:15.4,7:15.6,8:16,9:16.4,10:16.9,11:17.5,12:18,13:18.7,
 function kidRatio(age){
   if(!age||age>=18)return{h:1,b:1};
   const a=Math.max(4,Math.round(age));
-  return{h:KH[sexe][18]/KH[sexe][a],b:21.5/KB[a]};
+  return{h:KH[sexe][18]/KH[sexe][a],b:22.9/KB[a]};
 }
 function calc(){
   const h=+$("taille").value, w=+$("poids").value, age=+$("age").value||0;
@@ -449,7 +449,7 @@ $("valid").onclick=()=>{
   const sp=armsOk?Math.round((d("fl","el")+d("el","sl")+d("sl","sr")+d("sr","er")+d("er","fr"))*sc):0;
   const leg=((d("hl","kl")+d("kl","al"))+(d("hr","kr")+d("kr","ar")))/2*sc;
   const sr=sh/H;
-  const kidB=age&&age<18?KB[Math.max(4,Math.round(age))]/21.5:1;
+  const kidB=age&&age<18?KB[Math.max(4,Math.round(age))]/22.9:1;
   const bmi=Math.max(12,Math.min(32,(22.8+(sr-0.25)*140+((hp/H)-0.19)*60)*kidB));
   const w=Math.round(bmi*(H/100)**2);
   scanData={h:H,sh,hp,sp,w,leg:leg/H,age};
