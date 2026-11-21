@@ -6,10 +6,21 @@ android {
         applicationId 'com.vonmi.ultimateplayer'
         minSdk 21
         targetSdk 34
-        versionCode 3
-        versionName '1.2'
+        versionCode 4
+        versionName '1.2.1'
     }
-    buildTypes { release { minifyEnabled false } }
+    signingConfigs {
+        fixe {
+            storeFile file('ultimate.keystore')
+            storePassword 'ultimate123'
+            keyAlias 'ultimate'
+            keyPassword 'ultimate123'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.fixe }
+        release { minifyEnabled false; signingConfig signingConfigs.fixe }
+    }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 dependencies { implementation 'androidx.webkit:webkit:1.11.0' }
