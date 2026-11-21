@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f14">
+<title>Ultimate Player</title>
+<style>
+  :root{--bg:#0d0f14;--card:#161a23;--line:#262c3a;--txt:#eef1f6;--mut:#8b93a7;--acc:#ff7a1a;--acc2:#ffb347;--ok:#3ddc97}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--txt);padding:16px 16px 40px;max-width:560px;margin:auto}
+  header{text-align:center;margin:8px 0 18px}
+  header h1{font-size:28px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
+  header h1 span{color:var(--acc)}
+  header p{color:var(--mut);font-size:13px;margin-top:4px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+  label{display:block;font-size:13px;color:var(--mut);margin:12px 0 6px}
+  label:first-child{margin-top:0}
+  .row{display:flex;gap:10px}.row>div{flex:1}
+  input[type=number]{width:100%;background:#0f1219;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:18px;font-weight:700}
+  input[type=range]{width:100%;accent-color:var(--acc)}
+  .seg{display:flex;background:#0f1219;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{flex:1;background:none;border:0;color:var(--mut);padding:11px 4px;font-size:13px;font-weight:600}
+  .seg button.on{background:var(--acc);color:#111}
+  .go{width:100%;margin-top:16px;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#111;border:0;border-radius:12px;padding:15px;font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.5px}
+  .hint{font-size:11px;color:var(--mut);margin-top:4px}
+  #res{display:none}
+  .badge{display:flex;align-items:center;gap:14px}
+  .ovr{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--acc) var(--p),#252b38 0);flex:none}
+  .ovr div{width:64px;height:64px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:26px;font-weight:900}
+  .pos{font-size:12px;color:var(--acc);font-weight:800;text-transform:uppercase;letter-spacing:1px}
+  .arch{font-size:22px;font-weight:900;line-height:1.15;margin:2px 0}
+  .sub{font-size:13px;color:var(--mut)}
+  .desc{font-size:14px;line-height:1.5;margin-top:12px;color:#cfd5e1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .chip{font-size:12px;background:#0f1219;border:1px solid var(--line);border-radius:20px;padding:5px 10px}
+  .stat{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13px}
+  .stat b{width:84px;font-weight:600;color:#cfd5e1}
+  .bar{flex:1;height:9px;background:#0f1219;border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+  .stat span{width:28px;text-align:right;font-weight:800}
+  h3{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-bottom:8px}
+  ul.tips{list-style:none}ul.tips li{font-size:14px;padding:7px 0;border-bottom:1px solid var(--line)}ul.tips li:last-child{border:0}
+  ul.tips li::before{content:"▸ ";color:var(--acc)}
+  .alt{display:flex;justify-content:space-between;font-size:14px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .alt:last-child{border:0}.alt em{color:var(--mut);font-style:normal}
+  .hist{font-size:13px;display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+  .hist:last-child{border:0}
+  .small{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:6px 10px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ultimate <span>Player</span></h1>
+  <p>Découvre ton archétype de basketteur selon ta taille et ton poids</p>
+</header>
+
+<div class="card">
+  <label>Sexe</label>
+  <div class="seg" id="sexe"><button data-v="H" class="on">Homme</button><button data-v="F">Femme</button></div>
+
+  <div class="row">
+    <div><label>Taille (cm)</label><input type="number" id="taille" value="190" min="120" max="235" inputmode="numeric"></div>
+    <div><label>Poids (kg)</label><input type="number" id="poids" value="85" min="30" max="160" inputmode="numeric"></div>
+  </div>
+
+  <label>Envergure (cm) — facultatif</label>
+  <input type="number" id="env" placeholder="ex. 195" min="120" max="250" inputmode="numeric">
+  <div class="hint">Bras écartés, du bout d'un majeur à l'autre. Par défaut ≈ ta taille.</div>
+
+  <label>Style de jeu préféré</label>
+  <div class="seg" id="style"><button data-v="att">Attaque</button><button data-v="eq" class="on">Équilibré</button><button data-v="def">Défense</button></div>
+
+  <button class="go" id="go">Générer mon joueur</button>
+</div>
+
+<div id="res">
+  <div class="card">
+    <div class="badge">
+      <div class="ovr" id="ovrRing"><div id="ovr">--</div></div>
+      <div>
+        <div class="pos" id="pos"></div>
+        <div class="arch" id="arch"></div>
+        <div class="sub" id="sub"></div>
+      </div>
+    </div>
+    <p class="desc" id="desc"></p>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="card"><h3>Attributs</h3><div id="stats"></div></div>
+  <div class="card"><h3>Points forts à exploiter</h3><ul class="tips" id="forts"></ul></div>
+  <div class="card"><h3>À travailler</h3><ul class="tips" id="faibles"></ul></div>
+  <div class="card"><h3>Autres archétypes possibles</h3><div id="alts"></div></div>
+</div>
+
+<div class="card" id="histCard" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Historique</h3><button class="small" id="clear">Effacer</button></div>
+  <div id="hist" style="margin-top:8px"></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const clamp=(v,a=25,b=99)=>Math.round(Math.max(a,Math.min(b,v)));
+let sexe="H",style="eq";
+function seg(id,cb){$(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{$(id).querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");cb(b.dataset.v)})}
+seg("sexe",v=>sexe=v);seg("style",v=>style=v);
+
+const POSTES=[
+  {n:"Meneur",c:"1",max:183},{n:"Arrière",c:"2",max:193},{n:"Ailier",c:"3",max:201},
+  {n:"Ailier fort",c:"4",max:207},{n:"Pivot",c:"5",max:999}];
+const GAB=["Léger","Athlétique","Puissant"];
+
+const ARCH={
+ "Meneur":[
+  {n:"Meneur éclair",e:"Speedster",d:"Vif comme l'éclair, tu casses les défenses en un premier pas et tu pousses la contre-attaque à chaque possession.",f:["Contre-attaque et jeu rapide","Pénétrations et kick-out","Pression tout-terrain en défense"],w:["Finition au contact","Tenue face aux arrières plus costauds"]},
+  {n:"Meneur créateur",e:"Playmaker",d:"Le cerveau de l'équipe : vision, tempo et passes décisives. Tu fais briller tes coéquipiers.",f:["Pick and roll","Lecture du jeu et passes","Gestion du tempo"],w:["Tir après dribble","Défense sur écran"]},
+  {n:"Meneur bulldozer",e:"Two-Way Guard",d:"Un meneur solide qui attaque le cercle épaule en avant et défend fort sur l'homme.",f:["Drives en force","Défense sur porteur","Rebond d'arrière"],w:["Vitesse latérale","Tir à longue distance"]}],
+ "Arrière":[
+  {n:"Shooteur d'élite",e:"Sharpshooter",d:"Ta main est chaude : sortie d'écran, catch & shoot, tu étires la défense adverse.",f:["Tir à 3 points","Courses sans ballon","Lancers francs"],w:["Physique au contact","Défense sur joueur fort"]},
+  {n:"Scoreur slasher",e:"Slasher",d:"Tu attaques le cercle, tu provoques les fautes et tu marques de toutes les façons.",f:["Drives et finitions","Isolation","Jeu en transition"],w:["Régularité au tir","Choix de passe"]},
+  {n:"Arrière lockdown",e:"3&D",d:"Le défenseur que l'adversaire redoute, capable de sanctionner à 3 points quand on le laisse ouvert.",f:["Défense sur la meilleure arme adverse","Tir dans le corner","Interceptions"],w:["Création balle en main","Vitesse sur le premier pas"]}],
+ "Ailier":[
+  {n:"Ailier aérien",e:"High Flyer",d:"Longiligne et explosif, tu vis au-dessus du cercle : dunks, contres en recul, alley-oops.",f:["Détente et finitions aériennes","Contres en aide","Transition"],w:["Prise de masse et contact","Dribble sous pression"]},
+  {n:"Ailier polyvalent",e:"Two-Way Wing",d:"Le couteau suisse : tu défends sur 3 postes, tu scores, tu prends des rebonds.",f:["Polyvalence défensive","Tir à mi-distance","Rebond offensif"],w:["Spécialisation d'une arme signature"]},
+  {n:"Ailier meneur",e:"Point Forward",d:"Un gabarit d'ailier avec une âme de meneur : tu montes la balle et organises le jeu.",f:["Jeu poste-haut","Passes au-dessus de la défense","Post-up sur plus petit"],w:["Vitesse en défense","Tir rapide"]}],
+ "Ailier fort":[
+  {n:"Stretch Four",e:"Stretch Four",d:"Un intérieur qui tire de loin : tu sors ton vis-à-vis de la raquette et ouvres le jeu.",f:["Pick and pop","Tir à 3 points","Mobilité"],w:["Box-out et rebond défensif","Jeu dos au panier"]},
+  {n:"Ailier fort athlétique",e:"Athletic Four",d:"Puissance et explosivité : tu finis fort, tu cours le terrain et tu changes sur les écrans.",f:["Roll vers le cercle","Défense sur switch","Transition"],w:["Tir extérieur","Lancers francs"]},
+  {n:"Ailier fort bagarreur",e:"Glass Cleaner",d:"L'ouvrier de la raquette : écrans, rebonds, dureté. Aucune balle perdue ne t'échappe.",f:["Rebonds offensifs et défensifs","Écrans solides","Seconds ballons"],w:["Mobilité latérale","Endurance"]}],
+ "Pivot":[
+  {n:"Pivot contreur",e:"Rim Protector",d:"Grand et long, tu es le gardien du cercle : chaque pénétration adverse passe par toi.",f:["Contres et intimidation","Rebond défensif","Finitions près du cercle"],w:["Masse au poste bas","Mains et réception"]},
+  {n:"Pivot mobile",e:"Stretch Five",d:"Un grand qui court, passe et tire : moderne et difficile à défendre.",f:["Pick and pop / roll","Passes depuis le poste haut","Mobilité défensive"],w:["Puissance au poste bas","Rebond dans le trafic"]},
+  {n:"Pivot dominant",e:"Post Scorer",d:"La force brute sous le panier : tu prends position, tu reçois et tu scores dos au panier.",f:["Jeu dos au panier","Rebond","Écrans et contact"],w:["Défense sur pick and roll","Lancers francs"]}]
+};
+
+function calc(){
+  const h=+$("taille").value, w=+$("poids").value;
+  if(!(h>=120&&h<=235&&w>=30&&w<=160)){alert("Vérifie la taille (120–235 cm) et le poids (30–160 kg).");return}
+  const env=+$("env").value||h, ape=env-h;
+  const hA=h+(sexe==="F"?11:0);              // échelle commune
+  const eff=hA+ape*0.6;                       // taille "effective" avec envergure
+  const imc=w/((h/100)**2);
+  // indice de gabarit relatif à la taille
+  const bmiRef=23.3+(hA-185)*0.05;
+  const g=imc-bmiRef;
+  const gi=g<-1.5?0:g>1.8?2:1;
+  let pi=POSTES.findIndex(p=>eff<p.max);
+  const poste=POSTES[pi], a=ARCH[poste.n][gi];
+
+  // attributs
+  const sm=style==="att"?1:style==="def"?-1:0;
+  const s={
+    "Vitesse":   88-(hA-185)*0.9-g*3.5,
+    "Détente":   78-(hA-190)*0.2-g*3+ape*0.4,
+    "Force":     62+g*6+(hA-185)*0.45,
+    "Dribble":   82-(hA-185)*0.85-g*1.5+sm*3,
+    "Tir":       74-(hA-190)*0.35+sm*5+(gi===0&&pi>=1?6:0),
+    "Passe":     76-(hA-185)*0.6+(gi===1&&pi===0?6:0),
+    "Défense":   66+ape*0.9+(gi===1?4:0)-sm*5+(pi===4&&gi===0?6:0),
+    "Rebond":    50+(hA-180)*1.15+ape*1.1+g*2.5-sm*2
+  };
+  for(const k in s)s[k]=clamp(s[k]);
+  const vals=Object.values(s).sort((x,y)=>y-x);
+  const ovr=clamp((vals[0]+vals[1]+vals[2]+vals[3])/4*0.75+vals.reduce((x,y)=>x+y)/8*0.25,40,99);
+
+  $("res").style.display="block";
+  $("pos").textContent=`Poste ${poste.c} · ${poste.n}`;
+  $("arch").textContent=a.n;
+  $("sub").textContent=`${a.e} · Gabarit ${GAB[gi].toLowerCase()}`;
+  $("desc").textContent=a.d;
+  $("ovr").textContent=ovr;
+  $("ovrRing").style.setProperty("--p",ovr+"%");
+  $("chips").innerHTML=[`${h} cm`,`${w} kg`,`Envergure ${env} cm`,`IMC ${imc.toFixed(1)}`,`Ape index ${ape>=0?"+":""}${ape}`]
+    .map(t=>`<span class="chip">${t}</span>`).join("");
+  $("stats").innerHTML=Object.entries(s).map(([k,v])=>`<div class="stat"><b>${k}</b><div class="bar"><i style="width:${v}%"></i></div><span>${v}</span></div>`).join("");
+  $("forts").innerHTML=a.f.map(t=>`<li>${t}</li>`).join("");
+  $("faibles").innerHTML=a.w.map(t=>`<li>${t}</li>`).join("");
+
+  // alternatives : poste voisin + autre gabarit
+  const alts=[];
+  [pi-1,pi+1].forEach(i=>{if(POSTES[i])alts.push([ARCH[POSTES[i].n][gi].n,POSTES[i].n])});
+  [gi-1,gi+1].forEach(i=>{if(i>=0&&i<3)alts.push([ARCH[poste.n][i].n,`${poste.n} ${GAB[i].toLowerCase()}`])});
+  $("alts").innerHTML=alts.slice(0,3).map(([n,p])=>`<div class="alt">${n}<em>${p}</em></div>`).join("");
+
+  save({d:new Date().toLocaleDateString("fr-FR"),h,w,a:a.n,o:ovr});
+  $("res").scrollIntoView({behavior:"smooth"});
+}
+
+function load(){try{return JSON.parse(localStorage.getItem("up_hist")||"[]")}catch(e){return[]}}
+function save(e){const l=load();l.unshift(e);try{localStorage.setItem("up_hist",JSON.stringify(l.slice(0,10)))}catch(x){}showHist()}
+function showHist(){const l=load();$("histCard").style.display=l.length?"block":"none";
+  $("hist").innerHTML=l.map(e=>`<div class="hist"><span>${e.h} cm · ${e.w} kg → <b>${e.a}</b></span><span>${e.o}</span></div>`).join("")}
+$("clear").onclick=()=>{try{localStorage.removeItem("up_hist")}catch(e){}showHist()};
+$("go").onclick=calc;
+showHist();
+</script>
+</body>
+</html>
