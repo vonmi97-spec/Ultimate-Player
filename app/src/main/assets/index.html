@@ -56,6 +56,8 @@
   .step{font-size:15px;font-weight:800;margin:10px 0 4px}.step small{display:block;font-size:12px;color:var(--mut);font-weight:400;margin-top:2px}
   select{width:100%;background:#0f1219;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:15px}
   .warn{font-size:12px;color:var(--acc2);margin-top:8px;line-height:1.4}
+  #loupe{position:absolute;top:8px;width:120px;height:120px;border-radius:50%;border:3px solid var(--acc);display:none;pointer-events:none;box-shadow:0 4px 16px #000a}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
   .meas{font-size:14px;line-height:1.7;margin-top:8px}
 </style>
 </head>
@@ -70,37 +72,34 @@
 <div class="card" id="scan">
   <h3>Scan du joueur</h3>
   <div id="sc1">
-    <label>Objet de référence visible sur la photo</label>
-    <select id="ref">
-      <option value="204|Porte standard (204 cm)|Haut de la porte|Bas de la porte">Porte standard — 204 cm</option>
-      <option value="305|Panier de basket (305 cm)|Cercle du panier|Sol sous le panier">Panier de basket — 305 cm</option>
-      <option value="29.7|Feuille A4 (29,7 cm)|Haut de la feuille|Bas de la feuille">Feuille A4 tenue verticalement — 29,7 cm</option>
-      <option value="24.3|Ballon taille 7 (24,3 cm)|Bord gauche du ballon|Bord droit du ballon">Ballon taille 7 — 24,3 cm</option>
-      <option value="custom">Autre objet (je saisis sa taille)</option>
-    </select>
-    <div id="customBox" style="display:none"><label>Taille de l'objet (cm)</label><input type="number" id="refCm" placeholder="ex. 100"></div>
-    <div class="warn">Conseils : joueur debout, de face, pieds visibles, bras écartés à l'horizontale si possible. L'objet de référence doit être <b>à la même distance</b> de l'appareil que le joueur. Téléphone à hauteur de taille, bien droit.</div>
+    <label>Taille du joueur (cm)</label>
+    <input type="number" id="scanH" inputmode="numeric" placeholder="ex. 185">
+    <div class="hint">Une photo ne donne pas les centimètres réels : la taille sert d'échelle. Tout le reste est mesuré sur la photo.</div>
+    <div class="warn">Joueur debout, de face, en entier (tête et pieds visibles), bras écartés à l'horizontale. Téléphone droit, à hauteur de taille, à 3–4 m.</div>
     <video id="vid" autoplay playsinline muted style="margin-top:12px;display:none"></video>
     <div class="btns">
       <button class="b1" id="camBtn">Ouvrir la caméra</button>
       <button class="b2" id="galBtn">Choisir une photo</button>
     </div>
     <button class="b1" id="shotBtn" style="display:none;width:100%;margin-top:8px">📸 Prendre la photo</button>
-    <input type="file" id="file" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="file" accept="image/*" style="display:none">
   </div>
   <div id="sc2" style="display:none">
-    <div class="step" id="stepTxt"></div>
-    <canvas id="cv"></canvas>
+    <div class="step">Fais glisser chaque point sur le joueur<small>Pose ton doigt n'importe où près d'un point : il suit ton doigt sans être caché. La loupe aide à viser.</small></div>
+    <div style="position:relative">
+      <canvas id="cv"></canvas>
+      <canvas id="loupe" width="300" height="300"></canvas>
+    </div>
+    <div class="chips" id="legend"></div>
     <div class="btns">
-      <button class="b2" id="undo">↩ Annuler le point</button>
-      <button class="b2" id="skip" style="display:none">Passer</button>
       <button class="b2" id="restart">Nouvelle photo</button>
+      <button class="b1" id="valid">Valider le scan</button>
     </div>
   </div>
   <div id="sc3" style="display:none">
     <div class="meas" id="meas"></div>
-    <div class="warn">Le poids est une <b>estimation</b> à partir de la carrure : corrige-le dans le formulaire si tu le connais.</div>
-    <div class="btns"><button class="b2" id="restart2">Refaire</button><button class="b1" id="useScan">Utiliser ces mesures</button></div>
+    <div class="warn">Le poids est une <b>estimation</b> d'après la carrure : corrige-le dans le formulaire si tu le connais.</div>
+    <div class="btns"><button class="b2" id="restart2">Refaire</button><button class="b1" id="useScan">Voir mon joueur</button></div>
   </div>
   <button class="b2" id="closeScan" style="width:100%;margin-top:10px">Fermer le scan</button>
 </div>
@@ -232,6 +231,8 @@ function calc(){
     if(sr>=0.265)F.push("Carrure large : avantage dans les contacts et les écrans");
     else if(sr<=0.235)W.push("Carrure fine : renforcement du haut du corps (gainage, pompes)");
     if(scanData.hp&&scanData.sh/scanData.hp>=1.4)F.push("Haut du corps en V : bonne base pour la puissance");
+    if(scanData.leg>=0.53)F.push("Longues jambes : grandes foulées et bonne détente");
+    if(scanData.leg&&scanData.leg<=0.47)F.push("Centre de gravité bas : stabilité, appuis et dribble près du sol");
     if(scanData.hp&&scanData.sh/scanData.hp<1.2)W.push("Appuis à renforcer : squats, fentes, travail de pieds");
   }
   if(s["Vitesse"]<55)W.push("Vitesse : sprints courts, échelle de rythme, défense en glissés");
@@ -261,83 +262,114 @@ $("go").onclick=calc;
 showHist();
 
 // ===== SCAN =====
-let scanData=null,img=null,pts=[],steps=[],stream=null,refCm=0;
-const cv=$("cv"),ctx=cv.getContext("2d");
-$("ref").onchange=()=>$("customBox").style.display=$("ref").value==="custom"?"block":"none";
-$("openScan").onclick=()=>{$("scan").style.display="block";$("openScan").style.display="none";resetScan()};
+let scanData=null,img=null,stream=null,pts=[],drag=null;
+const cv=$("cv"),ctx=cv.getContext("2d"),lp=$("loupe"),lctx=lp.getContext("2d");
+const PT=[
+ {k:"head",n:"Tête (sommet)",c:"#ff7a1a",x:.5,y:.12},
+ {k:"feet",n:"Pieds (sol)",c:"#ff7a1a",x:.5,y:.92},
+ {k:"sl",n:"Épaule G",c:"#ffb347",x:.42,y:.27},
+ {k:"sr",n:"Épaule D",c:"#ffb347",x:.58,y:.27},
+ {k:"hl",n:"Hanche G",c:"#3ddc97",x:.45,y:.52},
+ {k:"hr",n:"Hanche D",c:"#3ddc97",x:.55,y:.52},
+ {k:"fl",n:"Doigts G",c:"#6ab0ff",x:.18,y:.28},
+ {k:"fr",n:"Doigts D",c:"#6ab0ff",x:.82,y:.28}];
+const LINKS=[["head","feet"],["sl","sr"],["hl","hr"],["fl","sl"],["sr","fr"],["sl","hl"],["sr","hr"]];
+$("openScan").onclick=()=>{$("scan").style.display="block";$("openScan").style.display="none";$("scanH").value=$("taille").value;resetScan()};
 $("closeScan").onclick=()=>{stopCam();$("scan").style.display="none";$("openScan").style.display="block"};
 function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$("vid").style.display="none";$("shotBtn").style.display="none"}
-function resetScan(){stopCam();pts=[];img=null;$("sc1").style.display="block";$("sc2").style.display="none";$("sc3").style.display="none"}
+function resetScan(){stopCam();img=null;$("sc1").style.display="block";$("sc2").style.display="none";$("sc3").style.display="none"}
 $("restart").onclick=resetScan;$("restart2").onclick=resetScan;
+function okH(){const h=+$("scanH").value;if(!(h>=110&&h<=240)){alert("Indique la taille du joueur (110–240 cm).");return false}return true}
 $("camBtn").onclick=async()=>{
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}},audio:false});
-    $("vid").srcObject=stream;$("vid").style.display="block";$("shotBtn").style.display="block";
-  }catch(e){alert("Caméra indisponible ("+e.name+"). Autorise l'accès à l'appareil photo, ou utilise « Choisir une photo ».")}
+  if(!okH())return;
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}},audio:false});
+    $("vid").srcObject=stream;$("vid").style.display="block";$("shotBtn").style.display="block";$("vid").scrollIntoView({behavior:"smooth"});
+  }catch(e){alert("Caméra indisponible ("+e.name+"). Autorise l'appareil photo ou utilise « Choisir une photo ».")}
 };
-$("shotBtn").onclick=()=>{
-  const v=$("vid"),c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;
-  c.getContext("2d").drawImage(v,0,0);const i=new Image();i.onload=()=>{stopCam();startTap(i)};i.src=c.toDataURL("image/jpeg",.9);
-};
-$("galBtn").onclick=()=>$("file").click();
+$("shotBtn").onclick=()=>{const v=$("vid"),c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;
+  c.getContext("2d").drawImage(v,0,0);const i=new Image();i.onload=()=>{stopCam();startEdit(i)};i.src=c.toDataURL("image/jpeg",.92)};
+$("galBtn").onclick=()=>{if(okH())$("file").click()};
 $("file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{const i=new Image();i.onload=()=>startTap(i);i.src=r.result};r.readAsDataURL(f);e.target.value=""};
-function startTap(i){
-  const v=$("ref").value;let r1,r2;
-  if(v==="custom"){refCm=+$("refCm").value;if(!(refCm>0)){alert("Indique la taille de l'objet de référence.");return}r1="Une extrémité de l'objet";r2="L'autre extrémité de l'objet"}
-  else{const p=v.split("|");refCm=+p[0];r1=p[2];r2=p[3]}
-  steps=[
-    {k:"r1",t:"Touche : "+r1,h:"Référence — point 1"},
-    {k:"r2",t:"Touche : "+r2,h:"Référence — point 2"},
-    {k:"head",t:"Touche le sommet de la tête",h:"Haut du crâne, sans les cheveux volumineux"},
-    {k:"feet",t:"Touche le sol sous les pieds",h:"Au niveau des talons"},
-    {k:"sl",t:"Touche l'épaule gauche (bord extérieur)",h:"Pour mesurer la carrure"},
-    {k:"sr",t:"Touche l'épaule droite (bord extérieur)",h:""},
-    {k:"hl",t:"Touche la hanche gauche",h:"Facultatif",o:1},
-    {k:"hr",t:"Touche la hanche droite",h:"Facultatif",o:1},
-    {k:"fl",t:"Bout des doigts — main gauche",h:"Facultatif : seulement si les bras sont écartés",o:1},
-    {k:"fr",t:"Bout des doigts — main droite",h:"Facultatif",o:1}];
-  img=i;pts=[];$("sc1").style.display="none";$("sc2").style.display="block";
-  cv.width=i.naturalWidth;cv.height=i.naturalHeight;draw();
+  r.onload=()=>{const i=new Image();i.onload=()=>startEdit(i);i.src=r.result};r.readAsDataURL(f);e.target.value=""};
+
+function startEdit(i){
+  img=i;cv.width=i.naturalWidth;cv.height=i.naturalHeight;
+  pts=PT.map(p=>({...p,x:p.x*cv.width,y:p.y*cv.height,moved:false}));
+  $("sc1").style.display="none";$("sc2").style.display="block";
+  $("legend").innerHTML=PT.map(p=>`<span class="chip"><span class="dot" style="background:${p.c}"></span>${p.n}</span>`).join("");
+  draw();cv.scrollIntoView({behavior:"smooth"});
 }
-function cur(){return steps[pts.length]}
+const k=()=>cv.width/cv.getBoundingClientRect().width;   // px image par px écran
+const P=key=>pts.find(p=>p.k===key);
 function draw(){
-  ctx.drawImage(img,0,0);const R=Math.max(6,cv.width/120);
-  ctx.lineWidth=R/2;
-  const P=k=>pts.find(p=>p.k===k);
-  [["r1","r2","#3ddc97"],["head","feet","#ff7a1a"],["sl","sr","#ffb347"],["hl","hr","#ffb347"],["fl","fr","#6ab0ff"]].forEach(([a,b,c])=>{
-    const A=P(a),B=P(b);if(A&&B&&A.x!=null&&B.x!=null){ctx.strokeStyle=c;ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke()}});
-  pts.forEach(p=>{if(p.x==null)return;ctx.fillStyle="#ff7a1a";ctx.strokeStyle="#fff";ctx.beginPath();ctx.arc(p.x,p.y,R,0,7);ctx.fill();ctx.stroke()});
-  const c=cur();
-  if(c){$("stepTxt").innerHTML=`${pts.length+1}/${steps.length} · ${c.t}<small>${c.h}</small>`;$("skip").style.display=c.o?"block":"none"}
-  else finishScan();
+  if(!img)return;ctx.drawImage(img,0,0);
+  const s=k(),R=11*s;
+  ctx.lineWidth=3*s;ctx.strokeStyle="rgba(255,255,255,.75)";
+  LINKS.forEach(([a,b])=>{const A=P(a),B=P(b);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke()});
+  ctx.font=`bold ${13*s}px system-ui`;
+  pts.forEach(p=>{
+    const act=drag&&drag.p===p;
+    ctx.fillStyle=p.c;ctx.strokeStyle="#fff";ctx.lineWidth=2.5*s;
+    ctx.beginPath();ctx.arc(p.x,p.y,act?R*1.3:R,0,7);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.moveTo(p.x-R*.5,p.y);ctx.lineTo(p.x+R*.5,p.y);ctx.moveTo(p.x,p.y-R*.5);ctx.lineTo(p.x,p.y+R*.5);ctx.strokeStyle="#111";ctx.lineWidth=1.5*s;ctx.stroke();
+    ctx.fillStyle="#fff";ctx.strokeStyle="#000";ctx.lineWidth=3*s;
+    const tx=p.x+R*1.6,ty=p.y+4*s;ctx.strokeText(p.n,tx,ty);ctx.fillText(p.n,tx,ty);
+  });
 }
-cv.addEventListener("click",e=>{
-  if(!cur())return;const b=cv.getBoundingClientRect();
-  pts.push({k:cur().k,x:(e.clientX-b.left)*cv.width/b.width,y:(e.clientY-b.top)*cv.height/b.height});draw();
+function loupe(p,ex){
+  const b=cv.getBoundingClientRect();
+  lp.style.display="block";
+  lp.style.left=(ex-b.left<b.width/2)?"auto":"8px";lp.style.right=(ex-b.left<b.width/2)?"8px":"auto";
+  const z=3.5,src=300/z*k()/ (300/120); // zone source en px image
+  lctx.fillStyle="#000";lctx.fillRect(0,0,300,300);
+  lctx.drawImage(img,p.x-src/2,p.y-src/2,src,src,0,0,300,300);
+  lctx.strokeStyle=p.c;lctx.lineWidth=3;lctx.beginPath();
+  lctx.moveTo(150,110);lctx.lineTo(150,190);lctx.moveTo(110,150);lctx.lineTo(190,150);lctx.stroke();
+  lctx.beginPath();lctx.arc(150,150,8,0,7);lctx.stroke();
+}
+function pos(e){const b=cv.getBoundingClientRect(),s=k();return{x:(e.clientX-b.left)*s,y:(e.clientY-b.top)*s}}
+cv.addEventListener("pointerdown",e=>{
+  if(!img)return;e.preventDefault();
+  const m=pos(e),s=k();let best=null,bd=1e9;
+  pts.forEach(p=>{const d=Math.hypot(p.x-m.x,p.y-m.y);if(d<bd){bd=d;best=p}});
+  if(bd>70*s)return;                       // trop loin de tout point
+  cv.setPointerCapture(e.pointerId);
+  drag={p:best,dx:best.x-m.x,dy:best.y-m.y,id:e.pointerId};
+  draw();loupe(best,e.clientX);
 });
-$("undo").onclick=()=>{pts.pop();draw()};
-$("skip").onclick=()=>{const c=cur();if(c&&c.o){pts.push({k:c.k,x:null});draw()}};
-function finishScan(){
-  const P=k=>{const p=pts.find(q=>q.k===k);return p&&p.x!=null?p:null};
-  const d=(a,b)=>a&&b?Math.hypot(a.x-b.x,a.y-b.y):0;
-  const sc=refCm/d(P("r1"),P("r2"));
-  const h=Math.round(d(P("head"),P("feet"))*sc), sh=d(P("sl"),P("sr"))*sc, hp=d(P("hl"),P("hr"))*sc, sp=Math.round(d(P("fl"),P("fr"))*sc);
-  if(!(h>=110&&h<=240)){alert("Taille mesurée incohérente ("+h+" cm). Vérifie que la référence est à la même distance que le joueur et recommence.");resetScan();return}
-  const sr=sh/h;
-  const bmi=Math.max(17.5,Math.min(32,22.8+(sr-0.25)*140));
-  const w=Math.round(bmi*(h/100)**2);
-  scanData={h,sh,hp,sp,w};
+cv.addEventListener("pointermove",e=>{
+  if(!drag||e.pointerId!==drag.id)return;e.preventDefault();
+  const m=pos(e);drag.p.x=Math.max(0,Math.min(cv.width,m.x+drag.dx));drag.p.y=Math.max(0,Math.min(cv.height,m.y+drag.dy));
+  drag.p.moved=true;draw();loupe(drag.p,e.clientX);
+});
+const end=e=>{if(!drag)return;drag=null;lp.style.display="none";draw()};
+cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end);
+window.addEventListener("resize",draw);
+
+$("valid").onclick=()=>{
+  const d=(a,b)=>Math.hypot(P(a).x-P(b).x,P(a).y-P(b).y);
+  if(!P("head").moved||!P("feet").moved){if(!confirm("Tu n'as pas déplacé la tête ou les pieds. Valider quand même ?"))return}
+  const H=+$("scanH").value,px=d("head","feet"),sc=H/px;
+  const sh=d("sl","sr")*sc;
+  const hp=(P("hl").moved||P("hr").moved)?d("hl","hr")*sc:0;
+  const armsOk=P("fl").moved&&P("fr").moved;
+  const sp=armsOk?Math.round(d("fl","fr")*sc):0;
+  const hipY=(P("hl").y+P("hr").y)/2,leg=(P("feet").y-hipY)*sc;
+  const sr=sh/H;
+  const bmi=Math.max(17.5,Math.min(32,22.8+(sr-0.25)*140+(hp?((hp/H)-0.19)*60:0)));
+  const w=Math.round(bmi*(H/100)**2);
+  scanData={h:H,sh,hp,sp,w,leg:leg/H};
   $("sc2").style.display="none";$("sc3").style.display="block";
-  $("meas").innerHTML=`📏 Taille : <b>${h} cm</b><br>💪 Carrure (épaules) : <b>${Math.round(sh)} cm</b>`+
-    (hp?`<br>🦵 Hanches : <b>${Math.round(hp)} cm</b>`:"")+(sp?`<br>✋ Envergure : <b>${sp} cm</b>`:"")+
-    `<br>⚖️ Poids estimé : <b>≈ ${w} kg</b>`;
-}
+  $("meas").innerHTML=`📏 Taille : <b>${H} cm</b><br>💪 Carrure : <b>${Math.round(sh)} cm</b>`+
+   (hp?`<br>🦵 Hanches : <b>${Math.round(hp)} cm</b>`:"")+
+   (sp?`<br>✋ Envergure : <b>${sp} cm</b> (${sp-H>=0?"+":""}${sp-H} cm)`:"<br>✋ Envergure : non mesurée (points des doigts non déplacés)")+
+   `<br>🦿 Longueur de jambes : <b>${Math.round(leg/H*100)} %</b> de la taille`+
+   `<br>⚖️ Poids estimé : <b>≈ ${w} kg</b>`;
+};
 $("useScan").onclick=()=>{
-  $("taille").value=scanData.h;$("poids").value=scanData.w;if(scanData.sp>=110)$("env").value=scanData.sp;
+  $("taille").value=scanData.h;$("poids").value=scanData.w;if(scanData.sp)$("env").value=scanData.sp;
   $("closeScan").click();calc();
 };
-// les saisies manuelles annulent le scan
 ["taille","poids","env"].forEach(id=>$(id).addEventListener("input",()=>{if(scanData&&+$("taille").value!==scanData.h)scanData=null}));
 </script>
 </body>
