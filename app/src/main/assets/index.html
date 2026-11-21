@@ -59,6 +59,14 @@
   details.acc[open] summary::after{transform:rotate(180deg)}
   details.acc[open] summary{border-bottom:1px solid var(--line)}
   .accBody{padding:0 16px 16px}
+  input[type=text]{background:#0f1219;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:16px;width:100%}
+  .pl{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+  .pl:last-child{border:0}
+  .pl img,.pl .ph{width:52px;height:68px;object-fit:cover;border-radius:8px;background:#0f1219;flex:none;display:grid;place-items:center;font-size:24px}
+  .pl .in{flex:1;min-width:0}.pl .in b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pl .in span{font-size:12px;color:var(--mut)}
+  .pl .ov{font-size:20px;font-weight:900;color:var(--acc)}
+  #resPhoto{width:100%;max-height:340px;object-fit:contain;border-radius:12px;background:#000;margin-bottom:12px;display:none}
   #scan{display:none}
   #scan video,#scan canvas{width:100%;border-radius:12px;background:#000;display:block;touch-action:none}
   .btns{display:flex;gap:8px;margin-top:10px}.btns button{flex:1}
@@ -171,6 +179,8 @@
 
 <div id="res">
   <div class="card">
+    <img id="resPhoto" alt="Photo du joueur">
+    <div class="sub" id="resName" style="font-size:15px;font-weight:800;color:var(--txt);margin-bottom:8px;display:none"></div>
     <div class="badge">
       <div class="ovr" id="ovrRing"><div id="ovr">--</div></div>
       <div>
@@ -187,11 +197,25 @@
   <div class="card"><h3>Points forts à exploiter</h3><ul class="tips" id="forts"></ul></div>
   <div class="card"><h3>À travailler</h3><ul class="tips" id="faibles"></ul></div>
   <div class="card"><h3>Autres archétypes possibles</h3><div id="alts"></div></div>
+  <div class="card" id="saveBox">
+    <h3>💾 Enregistrer ce joueur</h3>
+    <div class="row"><div style="flex:2"><input type="text" id="pName" placeholder="Nom du joueur" maxlength="40"></div>
+      <div><button class="b1" id="savePlayer" style="width:100%;height:100%">Enregistrer</button></div></div>
+    <div class="hint" id="saveMsg"></div>
+  </div>
   <div class="btns" style="margin-bottom:14px">
     <button class="b2" id="clearRes">🗑 Effacer ces statistiques</button>
     <button class="b2" id="newPlayer">➕ Nouveau joueur</button>
   </div>
 </div>
+
+<details class="card acc" id="playersCard">
+  <summary>👥 Mes joueurs <small id="pCount">0 enregistré</small></summary>
+  <div class="accBody">
+    <input type="text" id="pSearch" placeholder="🔍 Rechercher un joueur" style="width:100%;margin-top:12px">
+    <div id="pList"></div>
+  </div>
+</details>
 
 <div class="card" id="histCard" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Historique</h3><button class="small" id="clear">🗑 Tout effacer</button></div>
@@ -242,7 +266,8 @@ function kidRatio(age){
   const a=Math.max(4,Math.round(age));
   return{h:KH[sexe][18]/KH[sexe][a],b:22.9/KB[a]};
 }
-function calc(){
+let last=null,lastPhoto=null,viewing=null;
+function calc(noHist){
   const h=+$("taille").value, w=+$("poids").value, age=+$("age").value||0;
   if(!(h>=70&&h<=235&&w>=10&&w<=160)){alert("Vérifie la taille (70–235 cm) et le poids (10–160 kg).");return}
   if(!age&&h<140&&!confirm("Taille d'enfant sans âge indiqué : le résultat sera comparé aux adultes. Continuer ?\n(Annule et remplis l'âge pour un résultat adapté)"))return;
@@ -313,7 +338,13 @@ function calc(){
   [gi-1,gi+1].forEach(i=>{if(i>=0&&i<3)alts.push([ARCH[poste.n][i].n,`${poste.n} ${GAB[i].toLowerCase()}`])});
   $("alts").innerHTML=alts.slice(0,3).map(([n,p])=>`<div class="alt">${n}<em>${p}</em></div>`).join("");
 
-  save({d:new Date().toLocaleDateString("fr-FR"),h,w,a:a.n,o:ovr,ag:age});
+  last={h,w,age,env:+$("env").value||0,sexe,style,pos:$("pos").textContent,arch:a.n,sub:$("sub").textContent,ovr,scan:scanData?{...scanData}:null};
+  if(!noHist)save({d:new Date().toLocaleDateString("fr-FR"),h,w,a:a.n,o:ovr,ag:age});
+  if(!scanData&&!viewing)lastPhoto=null;
+  $("resPhoto").src=lastPhoto||"";$("resPhoto").style.display=lastPhoto?"block":"none";
+  $("resName").textContent=viewing?"👤 "+viewing.name:"";$("resName").style.display=viewing?"block":"none";
+  $("pName").value=viewing?viewing.name:"";$("saveMsg").textContent="";
+  $("savePlayer").textContent=viewing?"Mettre à jour":"Enregistrer";
   $("res").scrollIntoView({behavior:"smooth"});
 }
 
@@ -323,12 +354,48 @@ function showHist(){const l=load();$("histCard").style.display=l.length?"block":
   $("hist").innerHTML=l.map((e,i)=>`<div class="hist"><span>${e.d||""} · ${e.h} cm · ${e.w} kg${e.ag?" · "+e.ag+" ans":""} → <b>${e.a}</b></span><span style="white-space:nowrap"><b>${e.o}</b> <button class="small del" data-i="${i}" aria-label="Supprimer">✕</button></span></div>`).join("");
   $("hist").querySelectorAll(".del").forEach(b=>b.onclick=()=>{if(!confirm("Supprimer ce résultat de l'historique ?"))return;const l=load();l.splice(+b.dataset.i,1);try{localStorage.setItem("up_hist",JSON.stringify(l))}catch(x){}showHist()})}
 $("clear").onclick=()=>{if(!confirm("Effacer tout l'historique ?"))return;try{localStorage.removeItem("up_hist")}catch(e){}showHist()};
-function hideRes(){$("res").style.display="none";["stats","forts","faibles","alts","chips"].forEach(id=>$(id).innerHTML="");scanData=null;window.scrollTo({top:0,behavior:"smooth"})}
+// ===== JOUEURS ENREGISTRÉS =====
+function loadP(){try{return JSON.parse(localStorage.getItem("up_players")||"[]")}catch(e){return[]}}
+function storeP(l){try{localStorage.setItem("up_players",JSON.stringify(l));return true}catch(e){alert("Mémoire pleine : supprime des joueurs pour en enregistrer d'autres.");return false}}
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function showPlayers(){
+  const all=loadP(),q=$("pSearch").value.trim().toLowerCase(),l=all.filter(p=>!q||p.name.toLowerCase().includes(q));
+  $("pCount").textContent=all.length+(all.length>1?" enregistrés":" enregistré");
+  $("pList").innerHTML=l.length?l.map(p=>`<div class="pl" data-id="${p.id}">
+    ${p.photo?`<img src="${p.photo}">`:`<div class="ph">${p.age?"🧒":"🧑"}</div>`}
+    <div class="in"><b>${esc(p.name)}</b><span>${esc(p.arch)} · ${p.h} cm · ${p.w} kg${p.age?" · "+p.age+" ans":""}</span><br><span>${p.d}</span></div>
+    <div class="ov">${p.ovr}</div><button class="small del" data-del="${p.id}" aria-label="Supprimer">✕</button></div>`).join("")
+    :`<div class="hint" style="padding:12px 0">${all.length?"Aucun joueur trouvé.":"Aucun joueur enregistré. Génère ou scanne un joueur, puis appuie sur « Enregistrer »."}</div>`;
+  $("pList").querySelectorAll(".pl").forEach(el=>el.onclick=e=>{if(e.target.dataset.del)return;openPlayer(el.dataset.id)});
+  $("pList").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const p=loadP().find(x=>x.id===b.dataset.del);
+    if(!p||!confirm(`Supprimer ${p.name} ?`))return;storeP(loadP().filter(x=>x.id!==p.id));if(viewing&&viewing.id===p.id)viewing=null;showPlayers()});
+}
+$("pSearch").oninput=showPlayers;
+$("savePlayer").onclick=()=>{
+  const name=$("pName").value.trim();if(!name){$("pName").focus();$("saveMsg").textContent="Indique un nom.";return}
+  if(!last)return;
+  const l=loadP(),now=new Date().toLocaleDateString("fr-FR");
+  let id=viewing&&viewing.name===name?viewing.id:null;
+  const same=l.find(p=>p.name.toLowerCase()===name.toLowerCase());
+  if(!id&&same){if(!confirm(`${same.name} existe déjà. Remplacer sa fiche ?`))return;id=same.id}
+  const rec={...last,id:id||Date.now().toString(36),name,d:now,photo:lastPhoto||(id&&(l.find(p=>p.id===id)||{}).photo)||null};
+  const nl=id?l.map(p=>p.id===id?rec:p):[rec,...l];
+  if(!storeP(nl))return;
+  viewing=rec;$("resName").textContent="👤 "+name;$("resName").style.display="block";$("savePlayer").textContent="Mettre à jour";
+  $("saveMsg").textContent="✅ "+name+" enregistré dans « Mes joueurs ».";showPlayers();
+};
+function openPlayer(id){
+  const p=loadP().find(x=>x.id===id);if(!p)return;
+  viewing=p;lastPhoto=p.photo;scanData=p.scan;sexe=p.sexe;style=p.style;
+  $("taille").value=p.h;$("poids").value=p.w;$("age").value=p.age||"";$("env").value=p.env||"";
+  calc(true);
+}
+function hideRes(){viewing=null;lastPhoto=null;$("res").style.display="none";["stats","forts","faibles","alts","chips"].forEach(id=>$(id).innerHTML="");scanData=null;window.scrollTo({top:0,behavior:"smooth"})}
 $("clearRes").onclick=()=>{if(!confirm("Effacer ces statistiques ? (elles seront aussi retirées de l'historique)"))return;
-  const l=load();l.shift();try{localStorage.setItem("up_hist",JSON.stringify(l))}catch(x){}showHist();hideRes()};
+  if(!viewing){const l=load();l.shift();try{localStorage.setItem("up_hist",JSON.stringify(l))}catch(x){}}showHist();hideRes()};
 $("newPlayer").onclick=()=>{["a_env","e_env"].forEach(i=>$(i).value="");$("a_poids").value="";$("e_poids").value="";$("a_taille").value=185;$("e_taille").value=130;hideRes()};
 $("go").onclick=calc;
-showHist();
+showHist();showPlayers();
 
 // ===== SCAN =====
 let scanData=null,img=null,stream=null,pts=[],phase="",taps=[],sel=null;
@@ -391,7 +458,7 @@ function applyPanel(k){
 document.querySelectorAll("[data-gen]").forEach(b=>b.onclick=()=>{
   const k=b.dataset.gen,q=applyPanel(k);
   if(!q("poids")){alert("Choisis le poids, ou utilise 📷 Scanner pour l'estimer.");return}
-  scanData=null;calc();
+  scanData=null;viewing=null;calc();
 });
 document.querySelectorAll("[data-scan]").forEach(b=>b.onclick=()=>{
   const k=b.dataset.scan,q=applyPanel(k);
@@ -552,13 +619,20 @@ $("valid").onclick=()=>{
   const bmi=Math.max(12,Math.min(32,(22.8+(sr-0.25)*140+((hp/H)-0.19)*60)*kidB));
   const wSel=+$("scanW").value,w=wSel||Math.max(10,Math.min(160,Math.round(bmi*(H/100)**2)));
   scanData={h:H,sh,hp,sp,w,leg:leg/H,age,wEst:!wSel};
+  try{ // vignette : cadrage sur le joueur + squelette
+    const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y),pad=px*0.08;
+    let x0=Math.max(0,Math.min(...xs)-pad),x1=Math.min(img.naturalWidth,Math.max(...xs)+pad),y0=Math.max(0,Math.min(...ys)-pad),y1=Math.min(img.naturalHeight,Math.max(...ys)+pad);
+    const TH=420,sc2=TH/(y1-y0),tw=Math.round((x1-x0)*sc2),c=document.createElement("canvas");c.width=tw;c.height=TH;
+    const g2=c.getContext("2d"),keepSel=sel;sel=null;render(g2,sc2,-x0*sc2,-y0*sc2,tw,TH,true);sel=keepSel;
+    lastPhoto=c.toDataURL("image/jpeg",.75);
+  }catch(e){lastPhoto=null}
   $("sc2").style.display="none";$("sc3").style.display="block";$("wWarn").style.display=wSel?"none":"block";
   $("meas").innerHTML=`📏 Taille : <b>${H} cm</b>${age?` · ${age} ans`:""}<br>💪 Carrure : <b>${Math.round(sh)} cm</b><br>🦵 Hanches : <b>${Math.round(hp)} cm</b>`+
    (sp?`<br>✋ Envergure : <b>${sp} cm</b> (${sp-H>=0?"+":""}${sp-H} cm)`:"<br>✋ Envergure : non mesurée (déplace les deux points « Doigts »)")+
    `<br>🦿 Jambes : <b>${Math.round(leg/H*100)} %</b> de la taille`+
    (wSel?`<br>⚖️ Poids : <b>${w} kg</b>`:`<br>⚖️ Poids estimé : <b>≈ ${w} kg</b>`);
 };
-$("useScan").onclick=()=>{
+$("useScan").onclick=()=>{viewing=null;
   $("taille").value=scanData.h;$("poids").value=scanData.w;$("env").value=scanData.sp||"";$("age").value=scanData.age||"";
   $("closeScan").click();syncPanels();calc();
 };
