@@ -47,6 +47,7 @@
   .alt:last-child{border:0}.alt em{color:var(--mut);font-style:normal}
   .hist{font-size:13px;display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
   .hist:last-child{border:0}
+  .hist .del{padding:3px 8px;margin-left:6px;color:#ff6b6b;border-color:#ff6b6b55}
   .small{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:6px 10px;font-size:12px}
   .scanbtn{width:100%;background:#0f1219;border:1px dashed var(--acc);color:var(--acc);border-radius:12px;padding:13px;font-size:15px;font-weight:800;margin-bottom:14px}
   #scanBtns{margin-bottom:0}#scanBtns .scanbtn{font-size:14px;padding:13px 6px}
@@ -156,10 +157,14 @@
   <div class="card"><h3>Points forts à exploiter</h3><ul class="tips" id="forts"></ul></div>
   <div class="card"><h3>À travailler</h3><ul class="tips" id="faibles"></ul></div>
   <div class="card"><h3>Autres archétypes possibles</h3><div id="alts"></div></div>
+  <div class="btns" style="margin-bottom:14px">
+    <button class="b2" id="clearRes">🗑 Effacer ces statistiques</button>
+    <button class="b2" id="newPlayer">➕ Nouveau joueur</button>
+  </div>
 </div>
 
 <div class="card" id="histCard" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Historique</h3><button class="small" id="clear">Effacer</button></div>
+  <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Historique</h3><button class="small" id="clear">🗑 Tout effacer</button></div>
   <div id="hist" style="margin-top:8px"></div>
 </div>
 
@@ -285,8 +290,13 @@ function calc(){
 function load(){try{return JSON.parse(localStorage.getItem("up_hist")||"[]")}catch(e){return[]}}
 function save(e){const l=load();l.unshift(e);try{localStorage.setItem("up_hist",JSON.stringify(l.slice(0,10)))}catch(x){}showHist()}
 function showHist(){const l=load();$("histCard").style.display=l.length?"block":"none";
-  $("hist").innerHTML=l.map(e=>`<div class="hist"><span>${e.h} cm · ${e.w} kg${e.ag?" · "+e.ag+" ans":""} → <b>${e.a}</b></span><span>${e.o}</span></div>`).join("")}
-$("clear").onclick=()=>{try{localStorage.removeItem("up_hist")}catch(e){}showHist()};
+  $("hist").innerHTML=l.map((e,i)=>`<div class="hist"><span>${e.d||""} · ${e.h} cm · ${e.w} kg${e.ag?" · "+e.ag+" ans":""} → <b>${e.a}</b></span><span style="white-space:nowrap"><b>${e.o}</b> <button class="small del" data-i="${i}" aria-label="Supprimer">✕</button></span></div>`).join("");
+  $("hist").querySelectorAll(".del").forEach(b=>b.onclick=()=>{if(!confirm("Supprimer ce résultat de l'historique ?"))return;const l=load();l.splice(+b.dataset.i,1);try{localStorage.setItem("up_hist",JSON.stringify(l))}catch(x){}showHist()})}
+$("clear").onclick=()=>{if(!confirm("Effacer tout l'historique ?"))return;try{localStorage.removeItem("up_hist")}catch(e){}showHist()};
+function hideRes(){$("res").style.display="none";["stats","forts","faibles","alts","chips"].forEach(id=>$(id).innerHTML="");scanData=null;window.scrollTo({top:0,behavior:"smooth"})}
+$("clearRes").onclick=()=>{if(!confirm("Effacer ces statistiques ? (elles seront aussi retirées de l'historique)"))return;
+  const l=load();l.shift();try{localStorage.setItem("up_hist",JSON.stringify(l))}catch(x){}showHist();hideRes()};
+$("newPlayer").onclick=()=>{$("env").value="";$("age").value="";$("taille").value=190;$("poids").value=85;hideRes()};
 $("go").onclick=calc;
 showHist();
 
