@@ -86,8 +86,11 @@
 <body>
 <header>
   <h1>Ultimate <span>Player</span></h1>
-  <p>Découvre ton archétype de basketteur selon ta taille et ton poids</p>
+  <p id="tagline">Découvre ton archétype en basketball selon ta taille et ton poids</p>
 </header>
+
+<div class="card" style="padding:12px 16px"><label style="margin:0 0 6px">🏅 Sport</label>
+  <select id="sport"><option value="basket">🏀 Basketball</option><option value="foot">⚽ Football</option><option value="rugby">🏉 Rugby</option><option value="hand">🤾 Handball</option><option value="volley">🏐 Volleyball</option><option value="tennis">🎾 Tennis</option></select></div>
 
 <details class="card acc" id="accA" open>
   <summary>🧑 Adultes <small>18 ans et +</small></summary>
@@ -266,6 +269,75 @@ function kidRatio(age){
   const a=Math.max(4,Math.round(age));
   return{h:KH[sexe][18]/KH[sexe][a],b:22.9/KB[a]};
 }
+// ===== SPORTS =====
+let sport="basket";
+const SP={
+ basket:{n:"Basketball",i:"🏀"},
+ foot:{n:"Football",i:"⚽",
+  st:[["Vitesse",{V:1}],["Endurance",{E:1}],["Dribble",{A:2,V:1}],["Puissance",{F:1}],["Jeu de tête",{T:1,J:1}],["Duels",{F:1,T:1}]],
+  pos:[
+   {n:"Gardien de but",h:190,g:.5,e:"Goalkeeper",d:"Grand et vif sur sa ligne, tu commandes ta surface et rassures ta défense.",f:["Sorties aériennes","Réflexes sur la ligne","Organisation de la défense"],w:["Jeu au pied","Relances longues"]},
+   {n:"Défenseur central",h:188,g:1.2,e:"Centre-back",d:"Le mur de l'équipe : duels aériens, placement et autorité dans la surface.",f:["Duels aériens","Tacles et interceptions","Coups de pied arrêtés offensifs"],w:["Vitesse sur les appels en profondeur","Relance au sol"]},
+   {n:"Latéral",h:176,g:-.4,e:"Full-back",d:"Infatigable couloir : tu défends et tu dédoubles pour centrer.",f:["Allers-retours","Centres","Vitesse de recouvrement"],w:["Duels aériens","Jeu dans l'axe"]},
+   {n:"Milieu récupérateur",h:182,g:.8,e:"Box-to-box",d:"Le poumon du milieu : tu récupères, tu couvres et tu relances.",f:["Récupération","Volume de course","Passes simples et sûres"],w:["Dernière passe","Frappe de loin"]},
+   {n:"Milieu offensif",h:174,g:-1,e:"Meneur de jeu",d:"Le créateur : vision, petits espaces et passes décisives.",f:["Vision et dernière passe","Conduite de balle","Frappes et coups francs"],w:["Impact physique","Repli défensif"]},
+   {n:"Ailier",h:172,g:-1.3,e:"Winger",d:"Rapide et percutant, tu élimines en un contre un sur ton côté.",f:["Accélérations","Dribbles en un contre un","Centres et frappes"],w:["Jeu de tête","Travail défensif"]},
+   {n:"Avant-centre",h:186,g:1,e:"Target man",d:"Point d'appui devant : tu gardes les ballons, tu remises et tu finis.",f:["Jeu dos au but","Finition","Jeu de tête"],w:["Vitesse sur longue distance","Pressing"]}],
+  tip:{"Vitesse":"Sprints de 10–30 m, départs arrêtés","Endurance":"Footing fractionné, travail cardio","Dribble":"Conduite de balle en slalom, pied faible","Puissance":"Gainage, squats, sauts","Jeu de tête":"Timing de saut et coups de tête sur centres","Duels":"Travail des appuis et protection du ballon"}},
+ rugby:{n:"Rugby",i:"🏉",
+  st:[["Puissance",{F:1}],["Plaquage",{F:1,E:1}],["Vitesse",{V:1}],["Évasion",{A:1,V:1}],["Touche",{T:1,J:1}],["Endurance",{E:1}]],
+  pos:[
+   {n:"Pilier",h:183,g:5.5,e:"Prop",d:"La force brute de la mêlée : tu tiens le premier rang et tu avances au contact.",f:["Mêlée","Percussions au près","Rucks"],w:["Mobilité","Endurance"]},
+   {n:"Talonneur",h:179,g:4,e:"Hooker",d:"Au cœur de la mêlée et lanceur en touche : puissant et précis.",f:["Lancers en touche","Mêlée","Grattage"],w:["Vitesse","Jeu au large"]},
+   {n:"Deuxième ligne",h:198,g:2.5,e:"Lock",d:"Le grand de l'équipe : sauteur en touche et moteur de la mêlée.",f:["Touche","Poussée en mêlée","Jeu au contact"],w:["Vitesse latérale","Jeu au pied"]},
+   {n:"Troisième ligne",h:190,g:2.5,e:"Back row",d:"Plaqueur infatigable et porteur de balle : partout sur le terrain.",f:["Plaquages","Grattage","Percussions"],w:["Jeu au pied","Passes longues"]},
+   {n:"Demi de mêlée",h:172,g:.6,e:"Scrum-half",d:"Petit, vif et malin : tu animes le jeu depuis la base des rucks.",f:["Passes rapides","Vivacité","Lecture du jeu"],w:["Plaquage sur plus lourd","Jeu aérien"]},
+   {n:"Demi d'ouverture",h:180,g:1,e:"Fly-half",d:"Le stratège : jeu au pied, passes et choix de jeu.",f:["Jeu au pied","Organisation","Passes"],w:["Défense au contact"]},
+   {n:"Centre",h:184,g:2,e:"Centre",d:"Puissance et vitesse au milieu des lignes arrières : tu perces et tu plaques.",f:["Percussions","Plaquages","Passes après contact"],w:["Jeu au pied"]},
+   {n:"Ailier / Arrière",h:182,g:.3,e:"Back three",d:"Le finisseur : vitesse pure, appuis et réception des ballons hauts.",f:["Vitesse","Crochets","Réception des chandelles"],w:["Jeu au contact","Puissance"]}],
+  tip:{"Puissance":"Musculation, poussées, sauts","Plaquage":"Technique de plaquage épaule-bras, placement de la tête","Vitesse":"Sprints courts et départs","Évasion":"Crochets, appuis, échelle de rythme","Touche":"Timing de saut et réception","Endurance":"Fractionné et répétition d'efforts"}},
+ hand:{n:"Handball",i:"🤾",
+  st:[["Tir",{J:1,T:1}],["Vitesse",{V:1}],["Duels",{F:1}],["Feintes",{A:1}],["Envergure",{R:1}],["Endurance",{E:1}]],
+  pos:[
+   {n:"Gardien",h:192,g:.5,e:"Goalkeeper",d:"Grand, souple et réactif : tu fermes les angles et lances les contre-attaques.",f:["Réflexes","Couverture des angles","Relances rapides"],w:["Jeu au pied","Souplesse"]},
+   {n:"Pivot",h:192,g:3,e:"Pivot",d:"Au contact de la défense : écrans, blocs et tirs en force à 6 mètres.",f:["Duels au contact","Écrans","Tirs en pivot"],w:["Vitesse","Tir à distance"]},
+   {n:"Arrière",h:194,g:1,e:"Back",d:"Le canonnier : tir en suspension à 9 mètres au-dessus du bloc.",f:["Tir en suspension","Puissance de bras","Défense"],w:["Vitesse de pied","Feintes"]},
+   {n:"Demi-centre",h:184,g:0,e:"Playmaker",d:"Le chef d'orchestre : tu lances les combinaisons et fixes la défense.",f:["Passes","Lecture du jeu","Feintes de passe"],w:["Tir de loin","Duels"]},
+   {n:"Ailier",h:178,g:-.8,e:"Wing",d:"Rapide et adroit en angle fermé, tu termines les contre-attaques.",f:["Contre-attaque","Tir en angle","Vitesse"],w:["Duels","Tir à 9 m"]}],
+  tip:{"Tir":"Tirs en suspension, précision dans les coins","Vitesse":"Sprints de contre-attaque","Duels":"Gainage, renforcement épaules","Feintes":"Feintes de corps et changements d'appuis","Envergure":"Placement des bras en défense","Endurance":"Fractionné court"}},
+ volley:{n:"Volleyball",i:"🏐",
+  st:[["Attaque",{J:1,T:1}],["Contre",{T:1,R:1}],["Détente",{J:1}],["Réception",{A:1,V:1}],["Vitesse",{V:1}],["Endurance",{E:1}]],
+  pos:[
+   {n:"Central",h:201,g:-.2,e:"Middle blocker",d:"Le plus grand du filet : contres et attaques rapides au centre.",f:["Contre","Attaques rapides","Allonge"],w:["Réception","Défense basse"]},
+   {n:"Pointu",h:197,g:.3,e:"Opposite",d:"Le marqueur : attaques puissantes depuis l'aile et la ligne arrière.",f:["Attaque","Service puissant","Contre"],w:["Réception"]},
+   {n:"Réceptionneur-attaquant",h:191,g:-.4,e:"Outside hitter",d:"Complet : tu réceptionnes, tu défends et tu attaques.",f:["Réception","Attaque","Polyvalence"],w:["Contre face aux grands"]},
+   {n:"Passeur",h:188,g:-.6,e:"Setter",d:"Le cerveau : toucher de balle, vitesse et choix de passe.",f:["Passe","Lecture du jeu","Feintes"],w:["Attaque","Contre"]},
+   {n:"Libéro",h:176,g:-.5,e:"Libero",d:"Spécialiste de la défense et de la réception, rapide au sol.",f:["Réception","Défense","Vitesse au sol"],w:["Aucun jeu au-dessus du filet (règle)"]}],
+  tip:{"Attaque":"Course d'élan et frappe haute","Contre":"Timing de saut et placement des mains","Détente":"Pliométrie : sauts en contrebas, squats sautés","Réception":"Manchettes, déplacements bas","Vitesse":"Déplacements courts et réactions","Endurance":"Répétition de sauts"}},
+ tennis:{n:"Tennis",i:"🎾",
+  st:[["Service",{T:1,R:1}],["Puissance",{F:1}],["Déplacement",{V:1,A:1}],["Explosivité",{J:1,V:1}],["Allonge",{R:1}],["Endurance",{E:1}]],
+  pos:[
+   {n:"Serveur-volleyeur",h:194,g:0,e:"Big server",d:"Ton service est une arme : points courts et montées au filet.",f:["Service","Volée","Points courts"],w:["Échanges longs","Déplacements latéraux"]},
+   {n:"Frappeur de fond de court",h:188,g:.6,e:"Baseliner",d:"Puissance depuis la ligne de fond : tu prends l'initiative en coup droit.",f:["Coup droit","Puissance","Retour de service"],w:["Jeu au filet"]},
+   {n:"Contreur",h:177,g:-.4,e:"Counter-puncher",d:"Rapide et régulier, tu renvoies tout et fais déjouer l'adversaire.",f:["Défense","Endurance","Régularité"],w:["Service","Coups gagnants"]},
+   {n:"Joueur tout-terrain",h:184,g:0,e:"All-court",d:"Complet : tu varies le jeu, fond de court comme filet.",f:["Variété de coups","Adaptation","Jeu de transition"],w:["Une arme dominante"]}],
+  tip:{"Service":"Gestuelle de service, lancer de balle","Puissance":"Renforcement tronc et épaules","Déplacement":"Pas chassés, replacement","Explosivité":"Départs et sauts courts","Allonge":"Travail des fentes","Endurance":"Cardio par intervalles"}}
+};
+function physIdx(hA,g,ape,sm){return{
+  V:85-(hA-180)*0.8-g*4+sm*3, F:55+g*7+(hA-180)*0.5-sm*3, A:85-(hA-180)*1-g*3+sm*2,
+  E:75-g*5-(hA-180)*0.3, J:70-(hA-185)*0.1-g*3+ape*0.4, R:50+(hA-180)*1.5+ape*1.5, T:50+(hA-180)*2}}
+function sportResult(hA,g,ape,sm){
+  const S=SP[sport],I=physIdx(hA,g,ape,sm);
+  const ranked=S.pos.map(p=>({p,d:((hA-p.h)/7)**2+((g-p.g)/1.6)**2})).sort((a,b)=>a.d-b.d);
+  const st={};S.st.forEach(([k,w])=>{let t=0,n=0;for(const x in w){t+=I[x]*w[x];n+=w[x]}st[k]=clamp(t/n)});
+  return{ranked,st};
+}
+$("sport").onchange=()=>{sport=$("sport").value;const S=SP[sport];
+  $("tagline").textContent="Découvre ton archétype en "+S.n.toLowerCase()+" selon ta taille et ton poids";
+  try{localStorage.setItem("up_sport",sport)}catch(e){}
+  if($("res").style.display==="block"&&last)calc(true);};
+try{const sv=localStorage.getItem("up_sport");if(sv&&SP[sv]){$("sport").value=sv;$("sport").onchange()}}catch(e){}
+
 let last=null,lastPhoto=null,viewing=null;
 function calc(noHist){
   const h=+$("taille").value, w=+$("poids").value, age=+$("age").value||0;
@@ -280,12 +352,11 @@ function calc(noHist){
   const bmiRef=23.3+(hA-185)*0.05;
   const g=imc-bmiRef;
   const gi=g<-1.5?0:g>1.8?2:1;
-  let pi=POSTES.findIndex(p=>eff<p.max);
-  const poste=POSTES[pi], a=ARCH[poste.n][gi];
-
-  // attributs
   const sm=style==="att"?1:style==="def"?-1:0;
-  const s={
+  const B=sport==="basket",S=SP[sport];
+  let pi=POSTES.findIndex(p=>eff<p.max),poste=POSTES[pi],a=ARCH[poste.n][gi],posLabel=`Poste ${poste.c} · ${poste.n}`,sr0=null;
+  if(!B){sr0=sportResult(hA,g,ape,sm);const p0=sr0.ranked[0].p;a={n:p0.n,e:p0.e,d:p0.d,f:p0.f,w:p0.w};posLabel=`${S.i} ${S.n} · Poste`;}
+  let s=B?{
     "Vitesse":   88-(hA-185)*0.9-g*3.5,
     "Détente":   78-(hA-190)*0.2-g*3+ape*0.4,
     "Force":     62+g*6+(hA-185)*0.45,
@@ -294,13 +365,13 @@ function calc(noHist){
     "Passe":     76-(hA-185)*0.6+(gi===1&&pi===0?6:0),
     "Défense":   66+ape*0.9+(gi===1?4:0)-sm*5+(pi===4&&gi===0?6:0),
     "Rebond":    50+(hA-180)*1.15+ape*1.1+g*2.5-sm*2
-  };
+  }:sr0.st;
   for(const k in s)s[k]=clamp(s[k]);
   const vals=Object.values(s).sort((x,y)=>y-x);
-  const ovr=clamp((vals[0]+vals[1]+vals[2]+vals[3])/4*0.75+vals.reduce((x,y)=>x+y)/8*0.25,40,99);
+  const ovr=clamp((vals[0]+vals[1]+vals[2]+vals[3])/4*0.75+vals.reduce((x,y)=>x+y)/vals.length*0.25,40,99);
 
   $("res").style.display="block";
-  $("pos").textContent=`Poste ${poste.c} · ${poste.n}`;
+  $("pos").textContent=posLabel;
   $("arch").textContent=a.n;
   $("sub").textContent=`${a.e} · Gabarit ${GAB[gi].toLowerCase()}`;
   $("desc").textContent=a.d;
@@ -310,36 +381,39 @@ function calc(noHist){
     .map(t=>`<span class="chip">${t}</span>`).join("");
   $("stats").innerHTML=Object.entries(s).map(([k,v])=>`<div class="stat"><b>${k}</b><div class="bar"><i style="width:${v}%"></i></div><span>${v}</span></div>`).join("");
   const F=[...a.f],W=[...a.w];
-  if(ape>=5)F.push("Grande envergure (+"+ape+" cm) : interceptions, contres et rebonds");
+  if(ape>=5)F.push("Grande envergure (+"+ape+" cm) : "+(B?"interceptions, contres et rebonds":sport==="foot"?"tacles et interceptions":"allonge et portée"));
   else if(ape<=-3)W.push("Envergure courte : travaille le placement et l'anticipation en défense");
   if(scanData){
     const sr=scanData.sh/scanData.h;
-    if(sr>=0.265)F.push("Carrure large : avantage dans les contacts et les écrans");
+    if(sr>=0.265)F.push("Carrure large : avantage dans les contacts"+(B?" et les écrans":""));
     else if(sr<=0.235)W.push("Carrure fine : renforcement du haut du corps (gainage, pompes)");
     if(scanData.hp&&scanData.sh/scanData.hp>=1.4)F.push("Haut du corps en V : bonne base pour la puissance");
     if(scanData.leg>=0.53)F.push("Longues jambes : grandes foulées et bonne détente");
-    if(scanData.leg&&scanData.leg<=0.47)F.push("Centre de gravité bas : stabilité, appuis et dribble près du sol");
+    if(scanData.leg&&scanData.leg<=0.47)F.push("Centre de gravité bas : stabilité, appuis et changements de direction");
     if(scanData.hp&&scanData.sh/scanData.hp<1.2)W.push("Appuis à renforcer : squats, fentes, travail de pieds");
   }
   if(age&&age<13){F.push("À cet âge, tout peut encore évoluer : le poste n'est qu'une indication");
-    W.push("Priorité au jeu : dribble des deux mains, passes et adresse près du panier");
+    W.push(B?"Priorité au jeu : dribble des deux mains, passes et adresse près du panier":"Priorité au plaisir et à la technique de base, varier les postes");
     W.push("Coordination et motricité : courses, sauts, changements de direction en jouant");}
-  if(s["Vitesse"]<55)W.push("Vitesse : sprints courts, échelle de rythme, défense en glissés");
-  if(s["Tir"]<60)W.push("Tir : 100 tirs par séance, mécanique et lancers francs");
-  if(s["Dribble"]<55)W.push("Dribble : main faible, changements de main, dribble sous pression");
-  if(s["Force"]<50)W.push("Force : musculation au poids du corps, gainage");
-  if(s["Rebond"]<50)W.push("Rebond : box-out systématique et timing de saut");
+  if(!B){Object.entries(s).sort((x,y)=>x[1]-y[1]).slice(0,2).forEach(([k,v])=>{if(v<70)W.push(k+" : "+S.tip[k])});
+         const top=Object.entries(s).sort((x,y)=>y[1]-x[1])[0];F.push("Meilleur atout : "+top[0].toLowerCase()+" ("+top[1]+")");}
+  if(B&&s["Vitesse"]<55)W.push("Vitesse : sprints courts, échelle de rythme, défense en glissés");
+  if(B&&s["Tir"]<60)W.push("Tir : 100 tirs par séance, mécanique et lancers francs");
+  if(B&&s["Dribble"]<55)W.push("Dribble : main faible, changements de main, dribble sous pression");
+  if(B&&s["Force"]<50)W.push("Force : musculation au poids du corps, gainage");
+  if(B&&s["Rebond"]<50)W.push("Rebond : box-out systématique et timing de saut");
   $("forts").innerHTML=F.map(t=>`<li>${t}</li>`).join("");
   $("faibles").innerHTML=W.map(t=>`<li>${t}</li>`).join("");
 
   // alternatives : poste voisin + autre gabarit
   const alts=[];
-  [pi-1,pi+1].forEach(i=>{if(POSTES[i])alts.push([ARCH[POSTES[i].n][gi].n,POSTES[i].n])});
-  [gi-1,gi+1].forEach(i=>{if(i>=0&&i<3)alts.push([ARCH[poste.n][i].n,`${poste.n} ${GAB[i].toLowerCase()}`])});
+  if(!B)sr0.ranked.slice(1,4).forEach(r=>alts.push([r.p.n,r.p.e]));
+  else [pi-1,pi+1].forEach(i=>{if(POSTES[i])alts.push([ARCH[POSTES[i].n][gi].n,POSTES[i].n])});
+  if(B)[gi-1,gi+1].forEach(i=>{if(i>=0&&i<3)alts.push([ARCH[poste.n][i].n,`${poste.n} ${GAB[i].toLowerCase()}`])});
   $("alts").innerHTML=alts.slice(0,3).map(([n,p])=>`<div class="alt">${n}<em>${p}</em></div>`).join("");
 
-  last={h,w,age,env:+$("env").value||0,sexe,style,pos:$("pos").textContent,arch:a.n,sub:$("sub").textContent,ovr,scan:scanData?{...scanData}:null};
-  if(!noHist)save({d:new Date().toLocaleDateString("fr-FR"),h,w,a:a.n,o:ovr,ag:age});
+  last={h,w,age,env:+$("env").value||0,sexe,style,sport,pos:$("pos").textContent,arch:a.n,sub:$("sub").textContent,ovr,scan:scanData?{...scanData}:null};
+  if(!noHist)save({d:new Date().toLocaleDateString("fr-FR"),h,w,a:a.n,o:ovr,ag:age,sp:sport});
   if(!scanData&&!viewing)lastPhoto=null;
   $("resPhoto").src=lastPhoto||"";$("resPhoto").style.display=lastPhoto?"block":"none";
   $("resName").textContent=viewing?"👤 "+viewing.name:"";$("resName").style.display=viewing?"block":"none";
@@ -351,7 +425,7 @@ function calc(noHist){
 function load(){try{return JSON.parse(localStorage.getItem("up_hist")||"[]")}catch(e){return[]}}
 function save(e){const l=load();l.unshift(e);try{localStorage.setItem("up_hist",JSON.stringify(l.slice(0,10)))}catch(x){}showHist()}
 function showHist(){const l=load();$("histCard").style.display=l.length?"block":"none";
-  $("hist").innerHTML=l.map((e,i)=>`<div class="hist"><span>${e.d||""} · ${e.h} cm · ${e.w} kg${e.ag?" · "+e.ag+" ans":""} → <b>${e.a}</b></span><span style="white-space:nowrap"><b>${e.o}</b> <button class="small del" data-i="${i}" aria-label="Supprimer">✕</button></span></div>`).join("");
+  $("hist").innerHTML=l.map((e,i)=>`<div class="hist"><span>${(SP[e.sp||"basket"]||SP.basket).i} ${e.d||""} · ${e.h} cm · ${e.w} kg${e.ag?" · "+e.ag+" ans":""} → <b>${e.a}</b></span><span style="white-space:nowrap"><b>${e.o}</b> <button class="small del" data-i="${i}" aria-label="Supprimer">✕</button></span></div>`).join("");
   $("hist").querySelectorAll(".del").forEach(b=>b.onclick=()=>{if(!confirm("Supprimer ce résultat de l'historique ?"))return;const l=load();l.splice(+b.dataset.i,1);try{localStorage.setItem("up_hist",JSON.stringify(l))}catch(x){}showHist()})}
 $("clear").onclick=()=>{if(!confirm("Effacer tout l'historique ?"))return;try{localStorage.removeItem("up_hist")}catch(e){}showHist()};
 // ===== JOUEURS ENREGISTRÉS =====
@@ -363,7 +437,7 @@ function showPlayers(){
   $("pCount").textContent=all.length+(all.length>1?" enregistrés":" enregistré");
   $("pList").innerHTML=l.length?l.map(p=>`<div class="pl" data-id="${p.id}">
     ${p.photo?`<img src="${p.photo}">`:`<div class="ph">${p.age?"🧒":"🧑"}</div>`}
-    <div class="in"><b>${esc(p.name)}</b><span>${esc(p.arch)} · ${p.h} cm · ${p.w} kg${p.age?" · "+p.age+" ans":""}</span><br><span>${p.d}</span></div>
+    <div class="in"><b>${esc(p.name)}</b><span>${(SP[p.sport||"basket"]||SP.basket).i} ${esc(p.arch)} · ${p.h} cm · ${p.w} kg${p.age?" · "+p.age+" ans":""}</span><br><span>${p.d}</span></div>
     <div class="ov">${p.ovr}</div><button class="small del" data-del="${p.id}" aria-label="Supprimer">✕</button></div>`).join("")
     :`<div class="hint" style="padding:12px 0">${all.length?"Aucun joueur trouvé.":"Aucun joueur enregistré. Génère ou scanne un joueur, puis appuie sur « Enregistrer »."}</div>`;
   $("pList").querySelectorAll(".pl").forEach(el=>el.onclick=e=>{if(e.target.dataset.del)return;openPlayer(el.dataset.id)});
@@ -386,7 +460,8 @@ $("savePlayer").onclick=()=>{
 };
 function openPlayer(id){
   const p=loadP().find(x=>x.id===id);if(!p)return;
-  viewing=p;lastPhoto=p.photo;scanData=p.scan;sexe=p.sexe;style=p.style;
+  viewing=p;lastPhoto=p.photo;scanData=p.scan;sexe=p.sexe;style=p.style;sport=p.sport||"basket";$("sport").value=sport;
+  $("tagline").textContent="Découvre ton archétype en "+SP[sport].n.toLowerCase()+" selon ta taille et ton poids";
   $("taille").value=p.h;$("poids").value=p.w;$("age").value=p.age||"";$("env").value=p.env||"";
   calc(true);
 }
