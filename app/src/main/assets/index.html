@@ -17,6 +17,7 @@
   label{display:block;font-size:13px;color:var(--mut);margin:12px 0 6px}
   label:first-child{margin-top:0}
   .row{display:flex;gap:10px}.row>div{flex:1}
+  select#poids,select#age{font-size:18px;font-weight:700}
   input[type=number]{width:100%;background:#0f1219;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:18px;font-weight:700}
   input[type=range]{width:100%;accent-color:var(--acc)}
   .seg{display:flex;background:#0f1219;border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -55,7 +56,7 @@
   .b2{background:#0f1219;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px;font-size:14px;font-weight:700}
   .b1{background:var(--acc);border:0;color:#111;border-radius:10px;padding:11px;font-size:14px;font-weight:800}
   .step{font-size:15px;font-weight:800;margin:10px 0 4px}.step small{display:block;font-size:12px;color:var(--mut);font-weight:400;margin-top:2px}
-  select{width:100%;background:#0f1219;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:15px}
+  select{width:100%;-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,#ff7a1a 50%),linear-gradient(135deg,#ff7a1a 50%,transparent 50%);background-position:calc(100% - 18px) 52%,calc(100% - 12px) 52%;background-size:6px 6px;background-repeat:no-repeat;padding-right:30px;background:#0f1219;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:15px}
   .warn{font-size:12px;color:var(--acc2);margin-top:8px;line-height:1.4}
   .zbar{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px}
   .zbar button{width:42px;height:42px;border-radius:50%;border:0;background:#000b;color:#fff;font-size:20px;font-weight:800}
@@ -71,13 +72,19 @@
   <p>Découvre ton archétype de basketteur selon ta taille et ton poids</p>
 </header>
 
-<div class="row" id="scanBtns"><div><button class="scanbtn" id="openScan">📷 Scanner un joueur</button></div><div><button class="scanbtn" id="openKid">🧒 Scanner un enfant</button></div></div>
+<div id="scanBtns"><button class="scanbtn" id="openScan">📷 Scanner un joueur</button></div>
 
 <div class="card" id="scan">
   <h3 id="scanTitle">Scan du joueur</h3>
   <div id="sc1">
+    <label>Type de joueur</label>
+    <select id="scanType"><option value="A">🧑 Adulte</option><option value="E">🧒 Enfant / ado</option></select>
+    <div class="row">
+      <div><label>Âge</label><select id="scanAge"></select></div>
+      <div><label>Poids</label><select id="scanW"></select></div>
+    </div>
     <label>Taille du joueur (cm)</label>
-    <div class="row"><div><input type="number" id="scanH" inputmode="numeric" placeholder="ex. 185"></div><div><input type="number" id="scanAge" inputmode="numeric" placeholder="Âge (facultatif)"></div></div>
+    <input type="number" id="scanH" inputmode="numeric" placeholder="ex. 185">
     <div class="hint">Une photo ne donne pas les centimètres réels : la taille sert d'échelle. Tout le reste est mesuré sur la photo.</div>
     <div class="warn">Joueur debout, de face, en entier (tête et pieds visibles), bras écartés à l'horizontale. Téléphone droit, à hauteur de taille, à 3–4 m.</div>
     <video id="vid" autoplay playsinline muted style="margin-top:12px;display:none"></video>
@@ -104,7 +111,7 @@
   </div>
   <div id="sc3" style="display:none">
     <div class="meas" id="meas"></div>
-    <div class="warn">Le poids est une <b>estimation</b> d'après la carrure : corrige-le dans le formulaire si tu le connais.</div>
+    <div class="warn" id="wWarn">Le poids est une <b>estimation</b> d'après la carrure : corrige-le dans le formulaire si tu le connais.</div>
     <div class="btns"><button class="b2" id="restart2">Refaire</button><button class="b1" id="useScan">Voir mon joueur</button></div>
   </div>
   <button class="b2" id="closeScan" style="width:100%;margin-top:10px">Fermer le scan</button>
@@ -116,8 +123,8 @@
 
   <div class="row">
     <div><label>Taille (cm)</label><input type="number" id="taille" value="190" min="70" max="235" inputmode="numeric"></div>
-    <div><label>Poids (kg)</label><input type="number" id="poids" value="85" min="10" max="160" inputmode="decimal"></div>
-    <div><label>Âge</label><input type="number" id="age" placeholder="adulte" min="4" max="60" inputmode="numeric"></div>
+    <div><label>Poids</label><select id="poids"></select></div>
+    <div><label>Âge</label><select id="age"></select></div>
   </div>
 
   <label>Envergure (cm) — facultatif</label>
@@ -303,20 +310,33 @@ const BONES=[["head","neck"],["neck","sl"],["neck","sr"],["sl","sr"],["sl","el"]
 const P=k=>pts.find(p=>p.k===k);
 
 let kidMode=false;
-function openScan(kid){kidMode=kid;$("scan").style.display="block";$("scanBtns").style.display="none";
-  $("scanTitle").textContent=kid?"Scan d'un enfant":"Scan du joueur";
-  $("scanAge").placeholder=kid?"Âge (obligatoire)":"Âge (facultatif)";
-  if(kid){$("scanH").value=+$("taille").value<160?$("taille").value:"";$("scanH").placeholder="ex. 128";$("scanAge").value=+$("age").value&&+$("age").value<18?$("age").value:"";}
-  else{$("scanH").value=$("taille").value;$("scanH").placeholder="ex. 185";$("scanAge").value=$("age").value;}
-  resetScan();$("scan").scrollIntoView({behavior:"smooth"});(kid&&!$("scanH").value?$("scanH"):kid&&!$("scanAge").value?$("scanAge"):$("scanH")).focus()}
-$("openScan").onclick=()=>openScan(false);$("openKid").onclick=()=>openScan(true);
-$("closeScan").onclick=()=>{stopCam();$("scan").style.display="none";$("scanBtns").style.display="flex"};
+function fillSel(el,opts,val){el.innerHTML=opts.map(([v,t])=>`<option value="${v}">${t}</option>`).join("");if(val!=null&&[...el.options].some(o=>o.value==val))el.value=val}
+const AGES_E=[];for(let a=4;a<=17;a++)AGES_E.push([a,a+" ans"]);
+const KG=[];for(let k=10;k<=160;k++)KG.push([k,k+" kg"]);
+fillSel($("age"),[["","Adulte (18+)"],...AGES_E],"");
+fillSel($("poids"),KG,85);
+function scanTypeUI(){
+  kidMode=$("scanType").value==="E";const av=$("scanAge").value;
+  fillSel($("scanAge"),kidMode?AGES_E:[["","18 ans et +"]],kidMode?(av||9):"");
+  $("scanTitle").textContent=kidMode?"Scan d'un enfant":"Scan d'un adulte";
+  $("scanH").placeholder=kidMode?"ex. 128":"ex. 185";
+  const h=+$("scanH").value;if(kidMode&&h>=175||!kidMode&&h&&h<140)$("scanH").value="";
+}
+$("scanType").onchange=scanTypeUI;
+function openScan(){
+  const ag=+$("age").value;
+  $("scanType").value=ag?"E":"A";scanTypeUI();if(ag)$("scanAge").value=ag;
+  fillSel($("scanW"),[["","Estimer avec le scan"],...KG],"");
+  $("scanH").value=$("taille").value;scanTypeUI();
+  $("scan").style.display="block";$("scanBtns").style.display="none";resetScan();$("scan").scrollIntoView({behavior:"smooth"})}
+$("openScan").onclick=openScan;
+$("closeScan").onclick=()=>{stopCam();$("scan").style.display="none";$("scanBtns").style.display="block"};
 function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$("vid").style.display="none";$("shotBtn").style.display="none"}
 function resetScan(){stopCam();img=null;$("sc1").style.display="block";$("sc2").style.display="none";$("sc3").style.display="none"}
 $("restart").onclick=resetScan;$("restart2").onclick=resetScan;
 function okH(){const h=+$("scanH").value,a=+$("scanAge").value;
   if(!(h>=70&&h<=240)){alert("Indique la taille du joueur (70–240 cm).");return false}
-  if(kidMode&&!(a>=4&&a<=17)){alert("Indique l'âge de l'enfant (4 à 17 ans).");$("scanAge").focus();return false}
+  if(kidMode&&!(a>=4&&a<=17)){alert("Choisis l'âge de l'enfant.");return false}
   return true}
 $("camBtn").onclick=async()=>{
   if(!okH())return;
@@ -451,13 +471,13 @@ $("valid").onclick=()=>{
   const sr=sh/H;
   const kidB=age&&age<18?KB[Math.max(4,Math.round(age))]/22.9:1;
   const bmi=Math.max(12,Math.min(32,(22.8+(sr-0.25)*140+((hp/H)-0.19)*60)*kidB));
-  const w=Math.round(bmi*(H/100)**2);
-  scanData={h:H,sh,hp,sp,w,leg:leg/H,age};
-  $("sc2").style.display="none";$("sc3").style.display="block";
+  const wSel=+$("scanW").value,w=wSel||Math.max(10,Math.min(160,Math.round(bmi*(H/100)**2)));
+  scanData={h:H,sh,hp,sp,w,leg:leg/H,age,wEst:!wSel};
+  $("sc2").style.display="none";$("sc3").style.display="block";$("wWarn").style.display=wSel?"none":"block";
   $("meas").innerHTML=`📏 Taille : <b>${H} cm</b>${age?` · ${age} ans`:""}<br>💪 Carrure : <b>${Math.round(sh)} cm</b><br>🦵 Hanches : <b>${Math.round(hp)} cm</b>`+
    (sp?`<br>✋ Envergure : <b>${sp} cm</b> (${sp-H>=0?"+":""}${sp-H} cm)`:"<br>✋ Envergure : non mesurée (déplace les deux points « Doigts »)")+
    `<br>🦿 Jambes : <b>${Math.round(leg/H*100)} %</b> de la taille`+
-   `<br>⚖️ Poids estimé : <b>≈ ${w} kg</b>`;
+   (wSel?`<br>⚖️ Poids : <b>${w} kg</b>`:`<br>⚖️ Poids estimé : <b>≈ ${w} kg</b>`);
 };
 $("useScan").onclick=()=>{
   $("taille").value=scanData.h;$("poids").value=scanData.w;$("env").value=scanData.sp||"";$("age").value=scanData.age||"";
