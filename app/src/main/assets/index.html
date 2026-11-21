@@ -51,6 +51,14 @@
   .small{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:6px 10px;font-size:12px}
   .scanbtn{width:100%;background:#0f1219;border:1px dashed var(--acc);color:var(--acc);border-radius:12px;padding:13px;font-size:15px;font-weight:800;margin-bottom:14px}
   #scanBtns{margin-bottom:0}#scanBtns .scanbtn{font-size:14px;padding:13px 6px}
+  details.acc{padding:0;overflow:hidden}
+  details.acc summary{list-style:none;padding:16px;font-size:18px;font-weight:900;display:flex;align-items:center;gap:8px;cursor:pointer}
+  details.acc summary::-webkit-details-marker{display:none}
+  details.acc summary small{font-size:12px;color:var(--mut);font-weight:600;flex:1}
+  details.acc summary::after{content:"▾";color:var(--acc);font-size:20px;transition:transform .2s}
+  details.acc[open] summary::after{transform:rotate(180deg)}
+  details.acc[open] summary{border-bottom:1px solid var(--line)}
+  .accBody{padding:0 16px 16px}
   #scan{display:none}
   #scan video,#scan canvas{width:100%;border-radius:12px;background:#000;display:block;touch-action:none}
   .btns{display:flex;gap:8px;margin-top:10px}.btns button{flex:1}
@@ -73,13 +81,35 @@
   <p>Découvre ton archétype de basketteur selon ta taille et ton poids</p>
 </header>
 
-<div id="scanBtns"><button class="scanbtn" id="openScan">📷 Scanner un joueur</button></div>
+<details class="card acc" id="accA" open>
+  <summary>🧑 Adultes <small>18 ans et +</small></summary>
+  <div class="accBody">
+    <div class="row"><div><label>Sexe</label><select id="a_sexe"><option value="H">Homme</option><option value="F">Femme</option></select></div>
+      <div><label>Style de jeu</label><select id="a_style"><option value="eq">Équilibré</option><option value="att">Attaque</option><option value="def">Défense</option></select></div></div>
+    <div class="row"><div><label>Taille</label><select id="a_taille"></select></div><div><label>Poids</label><select id="a_poids"></select></div></div>
+    <label>Envergure (cm) — facultatif</label><input type="number" id="a_env" placeholder="ex. 195" inputmode="numeric">
+    <div class="btns"><button class="b2" data-scan="A">📷 Scanner</button><button class="b1" data-gen="A">⚡ Générer</button></div>
+  </div>
+</details>
+
+<details class="card acc" id="accE">
+  <summary>🧒 Enfants <small>4 à 17 ans</small></summary>
+  <div class="accBody">
+    <div class="row"><div><label>Sexe</label><select id="e_sexe"><option value="H">Garçon</option><option value="F">Fille</option></select></div>
+      <div><label>Âge</label><select id="e_age"></select></div></div>
+    <div class="row"><div><label>Taille</label><select id="e_taille"></select></div><div><label>Poids</label><select id="e_poids"></select></div></div>
+    <label>Style de jeu</label><select id="e_style"><option value="eq">Équilibré</option><option value="att">Attaque</option><option value="def">Défense</option></select>
+    <label>Envergure (cm) — facultatif</label><input type="number" id="e_env" placeholder="ex. 130" inputmode="numeric">
+    <div class="btns"><button class="b2" data-scan="E">📷 Scanner</button><button class="b1" data-gen="E">⚡ Générer</button></div>
+  </div>
+</details>
+
+<div id="scanBtns" style="display:none"><button class="scanbtn" id="openScan">📷 Scanner un joueur</button></div>
 
 <div class="card" id="scan">
   <h3 id="scanTitle">Scan du joueur</h3>
   <div id="sc1">
-    <label>Type de joueur</label>
-    <select id="scanType"><option value="A">🧑 Adulte</option><option value="E">🧒 Enfant / ado (4–17 ans)</option></select>
+    <div style="display:none"><select id="scanType"><option value="A">🧑 Adulte</option><option value="E">🧒 Enfant / ado (4–17 ans)</option></select></div>
     <div class="row">
       <div><label>Âge</label><select id="scanAge"></select></div>
       <div><label>Poids</label><select id="scanW"></select></div>
@@ -118,7 +148,7 @@
   <button class="b2" id="closeScan" style="width:100%;margin-top:10px">Fermer le scan</button>
 </div>
 
-<div class="card">
+<div class="card" id="mainForm" style="display:none">
   <label>Sexe</label>
   <div class="seg" id="sexe"><button data-v="H" class="on">Homme</button><button data-v="F">Femme</button></div>
 
@@ -296,7 +326,7 @@ $("clear").onclick=()=>{if(!confirm("Effacer tout l'historique ?"))return;try{lo
 function hideRes(){$("res").style.display="none";["stats","forts","faibles","alts","chips"].forEach(id=>$(id).innerHTML="");scanData=null;window.scrollTo({top:0,behavior:"smooth"})}
 $("clearRes").onclick=()=>{if(!confirm("Effacer ces statistiques ? (elles seront aussi retirées de l'historique)"))return;
   const l=load();l.shift();try{localStorage.setItem("up_hist",JSON.stringify(l))}catch(x){}showHist();hideRes()};
-$("newPlayer").onclick=()=>{$("env").value="";$("age").value="";$("taille").value=190;$("poids").value=85;hideRes()};
+$("newPlayer").onclick=()=>{["a_env","e_env"].forEach(i=>$(i).value="");$("a_poids").value="";$("e_poids").value="";$("a_taille").value=185;$("e_taille").value=130;hideRes()};
 $("go").onclick=calc;
 showHist();
 
@@ -343,7 +373,43 @@ function openScan(){
   fillSel($("scanH"),[["","Choisir la taille"],...CM],$("taille").value);scanTypeUI();
   $("scan").style.display="block";$("scanBtns").style.display="none";resetScan();$("scan").scrollIntoView({behavior:"smooth"})}
 $("openScan").onclick=openScan;
-$("closeScan").onclick=()=>{stopCam();$("scan").style.display="none";$("scanBtns").style.display="block"};
+// ===== MENUS ADULTES / ENFANTS =====
+fillSel($("a_taille"),CM.filter(([c])=>c>=130),185);
+fillSel($("a_poids"),[["","Je ne sais pas"],...KG.filter(([k])=>k>=30)],"");
+fillSel($("e_taille"),CM.filter(([c])=>c<=200),130);
+fillSel($("e_poids"),[["","Je ne sais pas"],...KG.filter(([k])=>k<=110)],"");
+fillSel($("e_age"),AGES_E,9);
+["accA","accE"].forEach(id=>$(id).addEventListener("toggle",()=>{if($(id).open)["accA","accE"].filter(x=>x!==id).forEach(x=>$(x).open=false)}));
+function setSeg(id,v){$(id).querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===v))}
+function applyPanel(k){
+  const q=f=>$((k==="A"?"a_":"e_")+f).value;
+  sexe=q("sexe");style=q("style");setSeg("sexe",sexe);setSeg("style",style);
+  $("taille").value=q("taille");$("env").value=q("env");$("age").value=k==="E"?q("age"):"";
+  if(q("poids"))$("poids").value=q("poids");
+  return q;
+}
+document.querySelectorAll("[data-gen]").forEach(b=>b.onclick=()=>{
+  const k=b.dataset.gen,q=applyPanel(k);
+  if(!q("poids")){alert("Choisis le poids, ou utilise 📷 Scanner pour l'estimer.");return}
+  scanData=null;calc();
+});
+document.querySelectorAll("[data-scan]").forEach(b=>b.onclick=()=>{
+  const k=b.dataset.scan,q=applyPanel(k);
+  openScan();
+  $("scanType").value=k;scanTypeUI();
+  if(k==="E")$("scanAge").value=q("age");
+  $("scanH").value=q("taille");
+  $("scanW").value=q("poids")||"";
+  $("accA").open=false;$("accE").open=false;
+});
+function syncPanels(){ // après un scan : renvoie les valeurs dans le bon menu
+  const k=+$("age").value?"e_":"a_";
+  [["taille","taille"],["poids","poids"],["env","env"]].forEach(([f,id])=>{const el=$(k+f),v=$(id).value;
+    if(el.tagName==="SELECT"){if([...el.options].some(o=>o.value==v))el.value=v}else el.value=v});
+  if(k==="e_")$("e_age").value=$("age").value;
+}
+
+$("closeScan").onclick=()=>{stopCam();$("scan").style.display="none"};
 function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$("vid").style.display="none";$("shotBtn").style.display="none"}
 function resetScan(){stopCam();img=null;$("sc1").style.display="block";$("sc2").style.display="none";$("sc3").style.display="none"}
 $("restart").onclick=resetScan;$("restart2").onclick=resetScan;
@@ -494,7 +560,7 @@ $("valid").onclick=()=>{
 };
 $("useScan").onclick=()=>{
   $("taille").value=scanData.h;$("poids").value=scanData.w;$("env").value=scanData.sp||"";$("age").value=scanData.age||"";
-  $("closeScan").click();calc();
+  $("closeScan").click();syncPanels();calc();
 };
 ["taille","poids","env"].forEach(id=>$(id).addEventListener("change",()=>{if(scanData&&+$("taille").value!==scanData.h)scanData=null}));
 </script>
