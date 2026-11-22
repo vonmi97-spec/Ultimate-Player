@@ -67,6 +67,9 @@
   .pl .in span{font-size:12px;color:var(--mut)}
   .pl .ov{font-size:20px;font-weight:900;color:var(--acc)}
   #resPhoto{width:100%;max-height:340px;object-fit:contain;border-radius:12px;background:#000;margin-bottom:12px;display:none}
+  .chk{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#cfd5e1;margin:12px 0 0;line-height:1.4}
+  .chk input{width:20px;height:20px;accent-color:var(--acc);flex:none;margin-top:1px}
+  .policy p{font-size:13px;line-height:1.5;color:#cfd5e1;margin-top:10px}
   #scan{display:none}
   #scan video,#scan canvas{width:100%;border-radius:12px;background:#000;display:block;touch-action:none}
   .btns{display:flex;gap:8px;margin-top:10px}.btns button{flex:1}
@@ -88,6 +91,13 @@
   <h1>Ultimate <span>Player</span></h1>
   <p id="tagline">Découvre ton archétype en basketball selon ta taille et ton poids</p>
 </header>
+
+<div class="card" id="privNotice" style="display:none;border-color:var(--acc)">
+  <h3>🔒 Protection des données</h3>
+  <p class="desc" style="margin-top:4px">Tout reste sur ce téléphone : l'appli n'a pas accès à Internet et n'envoie aucune donnée. Pour photographier ou enregistrer un enfant, il faut l'accord d'un parent.</p>
+  <button class="b1" id="privOk" style="width:100%;margin-top:12px">J'ai compris</button>
+</div>
+
 
 <div class="card" style="padding:12px 16px"><label style="margin:0 0 6px">🏅 Sport</label>
   <select id="sport"><option value="basket">🏀 Basketball</option><option value="foot">⚽ Football</option><option value="rugby">🏉 Rugby</option><option value="hand">🤾 Handball</option><option value="volley">🏐 Volleyball</option><option value="tennis">🎾 Tennis</option></select></div>
@@ -129,6 +139,7 @@
     <select id="scanH"></select>
     <div class="hint">Une photo ne donne pas les centimètres réels : la taille sert d'échelle. Tout le reste est mesuré sur la photo.</div>
     <div class="warn">Joueur debout, de face, en entier (tête et pieds visibles), bras écartés à l'horizontale. Téléphone droit, à hauteur de taille, à 3–4 m.</div>
+    <label class="chk"><input type="checkbox" id="consentPhoto"> <span id="consentTxt">La personne photographiée est d'accord pour être prise en photo.</span></label>
     <video id="vid" autoplay playsinline muted style="margin-top:12px;display:none"></video>
     <div class="btns">
       <button class="b1" id="camBtn">Ouvrir la caméra</button>
@@ -204,6 +215,8 @@
     <h3>💾 Enregistrer ce joueur</h3>
     <div class="row"><div style="flex:2"><input type="text" id="pName" placeholder="Nom du joueur" maxlength="40"></div>
       <div><button class="b1" id="savePlayer" style="width:100%;height:100%">Enregistrer</button></div></div>
+    <label class="chk" id="keepPhotoBox"><input type="checkbox" id="keepPhoto" checked> Garder la photo dans la fiche</label>
+    <label class="chk" id="consentSaveBox"><input type="checkbox" id="consentSave"> <span id="consentSaveTxt"></span></label>
     <div class="hint" id="saveMsg"></div>
   </div>
   <div class="btns" style="margin-bottom:14px">
@@ -217,6 +230,27 @@
   <div class="accBody">
     <input type="text" id="pSearch" placeholder="🔍 Rechercher un joueur" style="width:100%;margin-top:12px">
     <div id="pList"></div>
+  </div>
+</details>
+
+<details class="card acc" id="privCard">
+  <summary>🔒 Confidentialité &amp; données</summary>
+  <div class="accBody">
+    <div class="policy">
+      <p><b>Tes données restent sur ce téléphone.</b> Ultimate Player n'a pas accès à Internet : aucune donnée, aucune photo n'est envoyée, partagée ou vendue. Pas de compte, pas de publicité, pas de pistage.</p>
+      <p><b>Ce qui est enregistré :</b> uniquement ce que tu choisis d'enregistrer : nom, taille, poids, âge, résultats et, si tu le veux, une petite photo cadrée du joueur. La photo d'origine n'est jamais conservée.</p>
+      <p><b>Sauvegardes :</b> les données sont exclues des sauvegardes Google et des transferts vers un autre téléphone.</p>
+      <p><b>Mineurs :</b> photographier ou enregistrer un enfant nécessite l'accord d'un parent ou représentant légal.</p>
+      <p><b>Tes droits (RGPD) :</b> tu peux consulter, corriger ou supprimer chaque fiche à tout moment, ou tout effacer ci-dessous. Désinstaller l'appli supprime aussi toutes les données.</p>
+    </div>
+    <h3 style="margin-top:14px">Code de verrouillage</h3>
+    <div class="hint" id="pinState"></div>
+    <div class="btns"><button class="b2" id="pinSet">Définir un code</button><button class="b2" id="pinOff">Retirer le code</button></div>
+    <h3 style="margin-top:14px">Conservation des fiches</h3>
+    <select id="retention"><option value="0">Garder jusqu'à suppression</option><option value="182">Supprimer après 6 mois</option><option value="365">Supprimer après 1 an</option><option value="730">Supprimer après 2 ans</option></select>
+    <h3 style="margin-top:14px">Mes données</h3>
+    <div class="hint" id="dataInfo"></div>
+    <div class="btns"><button class="b2" id="delPhotos">Effacer les photos</button><button class="b2" id="delAll" style="color:#ff6b6b;border-color:#ff6b6b55">Tout effacer</button></div>
   </div>
 </details>
 
@@ -419,6 +453,9 @@ function calc(noHist){
   $("resName").textContent=viewing?"👤 "+viewing.name:"";$("resName").style.display=viewing?"block":"none";
   $("pName").value=viewing?viewing.name:"";$("saveMsg").textContent="";
   $("savePlayer").textContent=viewing?"Mettre à jour":"Enregistrer";
+  $("keepPhotoBox").style.display=lastPhoto?"flex":"none";$("keepPhoto").checked=true;
+  $("consentSave").checked=!!viewing;
+  $("consentSaveTxt").textContent=age&&age<18?"Un parent ou représentant légal est d'accord pour enregistrer la fiche de cet enfant.":"La personne est d'accord pour que sa fiche soit enregistrée.";
   $("res").scrollIntoView({behavior:"smooth"});
 }
 
@@ -448,11 +485,12 @@ $("pSearch").oninput=showPlayers;
 $("savePlayer").onclick=()=>{
   const name=$("pName").value.trim();if(!name){$("pName").focus();$("saveMsg").textContent="Indique un nom.";return}
   if(!last)return;
+  if(!$("consentSave").checked){$("saveMsg").textContent="⚠️ Coche la case d'accord avant d'enregistrer.";return}
   const l=loadP(),now=new Date().toLocaleDateString("fr-FR");
   let id=viewing&&viewing.name===name?viewing.id:null;
   const same=l.find(p=>p.name.toLowerCase()===name.toLowerCase());
   if(!id&&same){if(!confirm(`${same.name} existe déjà. Remplacer sa fiche ?`))return;id=same.id}
-  const rec={...last,id:id||Date.now().toString(36),name,d:now,photo:lastPhoto||(id&&(l.find(p=>p.id===id)||{}).photo)||null};
+  const rec={...last,id:id||Date.now().toString(36),name,d:now,ts:Date.now(),photo:$("keepPhoto").checked?(lastPhoto||(id&&(l.find(p=>p.id===id)||{}).photo)||null):null};
   const nl=id?l.map(p=>p.id===id?rec:p):[rec,...l];
   if(!storeP(nl))return;
   viewing=rec;$("resName").textContent="👤 "+name;$("resName").style.display="block";$("savePlayer").textContent="Mettre à jour";
@@ -503,6 +541,7 @@ function scanTypeUI(){
   kidMode=$("scanType").value==="E";const av=$("scanAge").value;
   fillSel($("scanAge"),kidMode?AGES_E:[["","18 ans et +"]],kidMode?(av||9):"");
   $("scanTitle").textContent=kidMode?"Scan d'un enfant":"Scan d'un adulte";
+  $("consentTxt").textContent=kidMode?"Un parent ou représentant légal a donné son accord pour photographier cet enfant.":"La personne photographiée est d'accord pour être prise en photo.";$("consentPhoto").checked=false;
   const h=+$("scanH").value;
   fillSel($("scanH"),[["","Choisir la taille"],...CM.filter(([c])=>kidMode?c<=200:c>=130)],h);
   if(!$("scanH").value)$("scanH").value=kidMode?"":"";
@@ -556,6 +595,7 @@ function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=nul
 function resetScan(){stopCam();img=null;$("sc1").style.display="block";$("sc2").style.display="none";$("sc3").style.display="none"}
 $("restart").onclick=resetScan;$("restart2").onclick=resetScan;
 function okH(){const h=+$("scanH").value,a=+$("scanAge").value;
+  if(!$("consentPhoto").checked){alert(kidMode?"Coche la case d'accord du parent ou représentant légal avant de photographier un enfant.":"Coche la case d'accord de la personne avant de la photographier.");return false}
   if(!(h>=70&&h<=240)){alert("Choisis la taille du joueur.");return false}
   if(kidMode&&!(a>=4&&a<=17)){alert("Choisis l'âge de l'enfant.");return false}
   return true}
@@ -712,6 +752,50 @@ $("useScan").onclick=()=>{viewing=null;
   $("closeScan").click();syncPanels();calc();
 };
 ["taille","poids","env"].forEach(id=>$(id).addEventListener("change",()=>{if(scanData&&+$("taille").value!==scanData.h)scanData=null}));
+
+// ===== PROTECTION DES DONNÉES =====
+const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+async function hashPin(pin){const t="up-salt:"+pin;
+  try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+  catch(e){let h=5381;for(const c of t)h=((h<<5)+h+c.charCodeAt(0))|0;return"d"+h}}
+let unlocked=!LS.get("up_pin");
+function privUI(){
+  const has=!!LS.get("up_pin");
+  $("pinState").textContent=has?"🔐 Un code protège « Mes joueurs ».":"Aucun code : « Mes joueurs » est accessible à toute personne utilisant ce téléphone.";
+  $("pinOff").style.display=has?"block":"none";$("pinSet").textContent=has?"Changer le code":"Définir un code";
+  const l=loadP(),ph=l.filter(p=>p.photo).length;let kb=0;["up_players","up_hist"].forEach(k=>kb+=((LS.get(k)||"").length)/1024);
+  $("dataInfo").textContent=`${l.length} fiche(s), dont ${ph} avec photo · ${load().length} ligne(s) d'historique · ${Math.round(kb)} Ko sur ce téléphone.`;
+  $("retention").value=LS.get("up_ret")||"0";
+}
+$("pinSet").onclick=async()=>{
+  if(LS.get("up_pin")){const o=prompt("Code actuel :");if(o===null)return;if(await hashPin(o)!==LS.get("up_pin")){alert("Code incorrect.");return}}
+  const a=prompt("Nouveau code (4 à 8 chiffres) :");if(a===null)return;
+  if(!/^\d{4,8}$/.test(a)){alert("Le code doit contenir 4 à 8 chiffres.");return}
+  if(prompt("Confirme le code :")!==a){alert("Les codes ne correspondent pas.");return}
+  LS.set("up_pin",await hashPin(a));unlocked=false;$("playersCard").open=false;privUI();alert("Code enregistré. Il sera demandé pour ouvrir « Mes joueurs ».");
+};
+$("pinOff").onclick=async()=>{const o=prompt("Code actuel :");if(o===null)return;
+  if(await hashPin(o)!==LS.get("up_pin")){alert("Code incorrect.");return}LS.del("up_pin");unlocked=true;privUI()};
+$("playersCard").addEventListener("toggle",async()=>{
+  if(!$("playersCard").open||unlocked)return;
+  $("playersCard").open=false;
+  const o=prompt("🔐 Code pour ouvrir « Mes joueurs » :");if(o===null)return;
+  if(await hashPin(o)===LS.get("up_pin")){unlocked=true;$("playersCard").open=true}else alert("Code incorrect.");
+});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&LS.get("up_pin")){unlocked=false;$("playersCard").open=false}});
+$("retention").onchange=()=>{LS.set("up_ret",$("retention").value);purge();privUI()};
+function purge(){const d=+(LS.get("up_ret")||0);if(!d)return;const lim=Date.now()-d*864e5,l=loadP();
+  const k=l.filter(p=>(p.ts||Date.now())>=lim);if(k.length!==l.length){storeP(k);showPlayers()}}
+$("delPhotos").onclick=()=>{if(!confirm("Effacer toutes les photos des fiches ? (les fiches sont gardées)"))return;
+  storeP(loadP().map(p=>({...p,photo:null})));lastPhoto=null;$("resPhoto").style.display="none";showPlayers();privUI()};
+$("delAll").onclick=()=>{if(!confirm("Effacer TOUTES les données : fiches, photos, historique et réglages ? Action définitive."))return;
+  ["up_players","up_hist","up_sport","up_ret","up_pin","up_priv"].forEach(LS.del);unlocked=true;viewing=null;hideRes();showHist();showPlayers();privUI();alert("Toutes les données ont été effacées.")};
+$("privCard").addEventListener("toggle",()=>{if($("privCard").open)privUI()});
+$("privOk").onclick=()=>{LS.set("up_priv","1");$("privNotice").style.display="none"};
+if(!LS.get("up_priv")){$("privNotice").style.display="block"}
+// timestamp des anciennes fiches puis purge
+(()=>{const l=loadP();if(l.some(p=>!p.ts)){storeP(l.map(p=>p.ts?p:{...p,ts:Date.now()}))}purge();showPlayers()})();
+privUI();
 </script>
 </body>
 </html>
