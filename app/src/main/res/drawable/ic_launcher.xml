@@ -1,8 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Icône Ultimate Player : silhouette d'un joueur qui dunke -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Fond -->
     <path android:fillColor="#0D0F14" android:pathData="M0,0h108v108h-108z"/>
-    <path android:fillColor="#FF7A1A" android:pathData="M54,18a36,36 0,1 1,0 72a36,36 0,1 1,0 -72z"/>
-    <path android:strokeColor="#0D0F14" android:strokeWidth="3" android:fillColor="#00000000"
-        android:pathData="M18,54h72M54,18v72M30,28c10,14 10,38 0,52M78,28c-10,14 -10,38 0,52"/>
+    <path android:fillColor="#161A23" android:pathData="M54,14a40,40 0,1 1,0 80a40,40 0,1 1,0 -80z"/>
+    <!-- Panier -->
+    <path android:strokeColor="#EEF1F6" android:strokeWidth="3" android:strokeLineCap="round"
+        android:fillColor="#00000000" android:pathData="M68,30L90,30"/>
+    <path android:strokeColor="#8B93A7" android:strokeWidth="1.4" android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M70,31L74,44M76,31L77,44M82,31L81,44M88,31L84,44M73,38L85,38"/>
+    <!-- Joueur -->
+    <path android:strokeColor="#FF7A1A" android:strokeWidth="12" android:strokeLineCap="round"
+        android:fillColor="#00000000" android:pathData="M47,44L40,64"/>
+    <path android:strokeColor="#FF7A1A" android:strokeWidth="5.5" android:strokeLineCap="round"
+        android:strokeLineJoin="round" android:fillColor="#00000000" android:pathData="M50,42L60,33L67,24"/>
+    <path android:strokeColor="#FF7A1A" android:strokeWidth="5.5" android:strokeLineCap="round"
+        android:strokeLineJoin="round" android:fillColor="#00000000" android:pathData="M44,44L34,48L28,42"/>
+    <path android:strokeColor="#FF7A1A" android:strokeWidth="6.5" android:strokeLineCap="round"
+        android:strokeLineJoin="round" android:fillColor="#00000000" android:pathData="M42,64L52,72L48,86"/>
+    <path android:strokeColor="#FF7A1A" android:strokeWidth="6.5" android:strokeLineCap="round"
+        android:strokeLineJoin="round" android:fillColor="#00000000" android:pathData="M38,66L30,76L22,74"/>
+    <path android:fillColor="#FF7A1A" android:pathData="M47,27.5a5.5,5.5 0,1 1,0 11a5.5,5.5 0,1 1,0 -11z"/>
+    <!-- Ballon -->
+    <path android:fillColor="#FFB347" android:pathData="M73,13a7,7 0,1 1,0 14a7,7 0,1 1,0 -14z"/>
+    <path android:strokeColor="#0D0F14" android:strokeWidth="1.2" android:fillColor="#00000000"
+        android:pathData="M66,20h14M73,13v14M68,15q4,5 0,10M78,15q-4,5 0,10"/>
 </vector>
